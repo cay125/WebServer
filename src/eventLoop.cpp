@@ -25,8 +25,8 @@ void Fire::eventLoop::loop()
         if (!activated_channels.empty())
             for (auto channel :activated_channels)
                 channel->processEvent();
-        else
-            isLooping = false;
+//        else
+//            isLooping = false;
     }
 }
 

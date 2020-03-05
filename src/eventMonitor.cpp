@@ -2,20 +2,21 @@
 // Created by xiangpu on 20-2-29.
 //
 #include "eventMonitor.hpp"
+#include <string.h>
 #include <iostream>
 
-Fire::eventMonitor::eventMonitor() : monitor_fd(epoll_create1(EPOLL_CLOEXEC))
+Fire::eventMonitor::eventMonitor() : monitor_fd(epoll_create1(EPOLL_CLOEXEC)), event_details(1024)
 {
 }
 
 std::vector<Fire::Channel *> Fire::eventMonitor::checkEvents()
 {
-    if (event_details.empty())
+    if (Fd2Channel.empty())
     {
         std::cout << "ERROR: no event are created\n";
         return std::vector<Channel *>(0);
     }
-    int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), -1);
+    int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), 10000);
     if (numEvents < 0)
     {
         std::cout << "ERROR: error occurs when waiting event happen\n";
@@ -44,42 +45,34 @@ std::vector<Fire::Channel *> Fire::eventMonitor::GetActivatedChannels(int count)
 
 void Fire::eventMonitor::addEvent(int fd, uint32_t event_flags)
 {
+    if (event_details.size() < Fd2Channel.size())
+        event_details.resize(2 * event_details.size());
     epoll_event temp_event;
-    event_details.push_back(temp_event);
-    //event_details[event_details.size() - 1].events = EPOLLIN | EPOLLET | EPOLLOUT;
-    event_details[event_details.size() - 1].events = event_flags;
-    event_details[event_details.size() - 1].data.fd = fd;
-    if (epoll_ctl(monitor_fd, EPOLL_CTL_ADD, fd, &event_details[event_details.size() - 1]) == -1)
+    bzero(&temp_event, sizeof(temp_event));
+    temp_event.data.fd = fd;
+    temp_event.events = event_flags;
+    if (epoll_ctl(monitor_fd, EPOLL_CTL_ADD, fd, &temp_event) == -1)
         std::cout << "add event failed\n";
 }
 
 void Fire::eventMonitor::modEvent(int fd, uint32_t event_flags)
 {
-    for (auto &event:event_details)
-    {
-        if (event.data.fd == fd)
-        {
-            event.events = event_flags;
-            if (epoll_ctl(monitor_fd, EPOLL_CTL_MOD, fd, &event) == -1)
-                std::cout << "mod event failed\n";
-            break;
-        }
-    }
+    epoll_event temp_event;
+    bzero(&temp_event, sizeof(temp_event));
+    temp_event.data.fd = fd;
+    temp_event.events = event_flags;
+    if (epoll_ctl(monitor_fd, EPOLL_CTL_MOD, fd, &temp_event) == -1)
+        std::cout << "mod event failed\n";
 }
 
 void Fire::eventMonitor::delEvent(int fd, uint32_t event_flags)
 {
-    for (int i = 0; i < event_details.size(); i++)
-    {
-        if (event_details[i].data.fd == fd)
-        {
-            event_details[i].events = event_flags;
-            if (epoll_ctl(monitor_fd, EPOLL_CTL_DEL, fd, &event_details[i]) == -1)
-                std::cout << "del event failed\n";
-            event_details.erase(event_details.begin() + i);
-            break;
-        }
-    }
+    epoll_event temp_event;
+    bzero(&temp_event, sizeof(temp_event));
+    temp_event.data.fd = fd;
+    temp_event.events = event_flags;
+    if (epoll_ctl(monitor_fd, EPOLL_CTL_DEL, fd, &temp_event) == -1)
+        std::cout << "del event failed\n";
 }
 
 

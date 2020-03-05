@@ -62,7 +62,7 @@ void Fire::TcpConnection::HandleRead()
 
 void Fire::TcpConnection::HandleWrite()
 {
-    std::cout << "enter write handler fd" << connChannel.GetMonitorFd() << "\n";
+    std::cout << "enter write handler fd: " << connChannel.GetMonitorFd() << "\n";
     ssize_t n = write(connChannel.GetMonitorFd(), outputBuffer.StartPoint(), outputBuffer.readableBytes());
     if (n < 0)
     {
@@ -73,7 +73,7 @@ void Fire::TcpConnection::HandleWrite()
     if (outputBuffer.readableBytes() == 0)
         connChannel.disableWriteCallback();
     else
-        std::cout << "Going to write more data: "<<outputBuffer.readableBytes()<<" bytes\n";
+        std::cout << "Going to write more data: " << outputBuffer.readableBytes() << " bytes\n";
 }
 
 void Fire::TcpConnection::HandleClose()
@@ -125,4 +125,5 @@ void Fire::TcpConnection::connDestroyed()
         connectionCallback(shared_from_this());
     event_loop->removeChannel(&connChannel);
     connChannel.clearCallback();
+    close(connChannel.GetMonitorFd());
 }

@@ -6,6 +6,7 @@
 #define FIRESERVER_TCPSERVER_HPP
 
 #include "eventLoop.hpp"
+#include "eventThreadPool.hpp"
 #include "Acceptor.hpp"
 #include "Buffer.hpp"
 #include <set>
@@ -56,7 +57,7 @@ namespace Fire
     class TcpServer
     {
     public:
-        explicit TcpServer(eventLoop *loop, uint16_t port);
+        explicit TcpServer(eventLoop *loop, uint16_t port, int thread_num = 4);
 
         void newConnection(int fd, netAddr addr);
 
@@ -68,6 +69,7 @@ namespace Fire
 
     private:
         std::set<std::shared_ptr<Fire::TcpConnection>> connSet;
+        eventLoopThreadPool thread_pool;
         eventLoop *event_loop;
         Acceptor TcpAcceptor;
         connFcn connectionCallback;

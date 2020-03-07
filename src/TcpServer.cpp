@@ -5,9 +5,11 @@
 #include <iostream>
 #include <unistd.h>
 
-Fire::TcpServer::TcpServer(Fire::eventLoop *loop, uint16_t port) : event_loop(loop), TcpAcceptor(loop, netAddr(netAddr::ANY_ADDR, port))
+Fire::TcpServer::TcpServer(eventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, netAddr(netAddr::ANY_ADDR, port)),
+                                                                             thread_pool(loop, thread_num)
 {
     std::cout << "server is listening on port: " << port << "\n";
+    thread_pool.Start();
     TcpAcceptor.setNewConnCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
 
@@ -29,7 +31,8 @@ void Fire::TcpServer::setMessageCallback(msgFcn &&cb)
 void Fire::TcpServer::newConnection(int fd, Fire::netAddr addr)
 {
     std::cout << "one connection established from Ip: " << addr.GetAddr() << " Port: " << addr.GetPort() << "\n";
-    std::shared_ptr<TcpConnection> conn(new TcpConnection(event_loop, fd, addr));
+    eventLoop *pool = thread_pool.GetNextThread();
+    std::shared_ptr<TcpConnection> conn(new TcpConnection(pool, fd, addr));
     conn->setConnectionCallback(std::move(connectionCallback));
     conn->setMessageCallback(std::move(messageCallback));
     conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));

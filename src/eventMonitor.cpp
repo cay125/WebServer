@@ -11,11 +11,11 @@ Fire::eventMonitor::eventMonitor() : monitor_fd(epoll_create1(EPOLL_CLOEXEC)), e
 
 std::vector<Fire::Channel *> Fire::eventMonitor::checkEvents()
 {
-    if (Fd2Channel.empty())
+    /*if (Fd2Channel.empty())
     {
         std::cout << "ERROR: no event are created\n";
         return std::vector<Channel *>(0);
-    }
+    }*/
     int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), 10000);
     if (numEvents < 0)
     {

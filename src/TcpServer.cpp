@@ -41,7 +41,12 @@ void Fire::TcpServer::newConnection(int fd, Fire::netAddr addr)
 
 void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn)
 {
-    connSet.erase(conn);
+    event_loop->runInLoop([this, conn]()
+                          {
+                              auto n = connSet.erase(conn);
+                              if (n != 1)
+                                  std::cout << "Error: erase closed connection\n";
+                          });
 }
 
 Fire::TcpConnection::TcpConnection(eventLoop *loop, int fd, netAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr)

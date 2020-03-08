@@ -16,7 +16,7 @@ std::vector<Fire::Channel *> Fire::eventMonitor::checkEvents()
         std::cout << "ERROR: no event are created\n";
         return std::vector<Channel *>(0);
     }*/
-    int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), 10000);
+    int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), -1);
     if (numEvents < 0)
     {
         std::cout << "ERROR: error occurs when waiting event happen\n";

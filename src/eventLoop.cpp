@@ -86,6 +86,8 @@ void Fire::eventLoop::loop()
 void Fire::eventLoop::stopLoop()
 {
     status = STOP;
+    if (!isInCurrentThread())
+        wakeSelf();
 }
 
 void Fire::eventLoop::updateChannel(Channel *channel)

@@ -5,6 +5,7 @@
 #include "string.h"
 #include "Acceptor.hpp"
 #include "TcpServer.hpp"
+#include "HttpServer.hpp"
 #include <unistd.h>
 
 
@@ -46,8 +47,17 @@ int main()
                                   p->send(buf);
                               });
     server.setConnectionCallback([](std::shared_ptr<Fire::TcpConnection> p)
-                                 { std::cout << "connection callback was called from thread: " << std::this_thread::get_id() << "\n"; });
+                                 {
+                                     if (p->connectionState() == Fire::TcpConnection::connected)
+                                         std::cout << "connected callback was called from thread: " << std::this_thread::get_id() << "\n";
+                                     else
+                                         std::cout << "closed callback was called from thread: " << std::this_thread::get_id() << "\n";
+                                 });
     server.start();
+
+    //for http server test
+    Fire::App::HttpServer http_server(&event_loop, 8070);
+    http_server.Start();
     event_loop.loop();
     return 0;
 }

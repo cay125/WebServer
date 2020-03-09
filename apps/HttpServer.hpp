@@ -1,0 +1,33 @@
+//
+// Created by xiangpu on 20-3-8.
+//
+
+#ifndef FIRESERVER_HTTPSERVER_HPP
+#define FIRESERVER_HTTPSERVER_HPP
+
+#include "TcpServer.hpp"
+#include "HttpData.hpp"
+
+namespace Fire
+{
+    namespace App
+    {
+        using namespace Fire;
+
+        class HttpServer
+        {
+        public:
+            explicit HttpServer(eventLoop *loop, uint16_t port, int threadNum = 4);
+
+            void Start();
+
+        private:
+            void HandleConnect(std::shared_ptr<TcpConnection> conn);
+
+            std::map<std::shared_ptr<TcpConnection>, std::shared_ptr<App::HttpData>> Conn2Http;
+            TcpServer server;
+        };
+    }
+}
+
+#endif //FIRESERVER_HTTPDATA_HPP

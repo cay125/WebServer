@@ -3,16 +3,16 @@
 //
 #include "HttpData.hpp"
 #include <iostream>
-#include <filesystem>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 
-namespace fs=std::filesystem;
 std::map<std::string, std::string> Fire::App::cType::suffix2type;
 
-Fire::App::HttpData::HttpData()
+Fire::App::HttpData::HttpData(std::string _root_dir) : root_dir(_root_dir)
 {
+    if (!root_dir.is_absolute())
+        root_dir = fs::canonical(root_dir);
     cType::typeInit();
 }
 
@@ -30,6 +30,7 @@ void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, con
     std::string outputBuf;
     response.makeString(outputBuf);
     p->send(outputBuf);
+    reset();
 }
 
 Fire::App::HttpData::STATUS Fire::App::HttpData::parserHttpMsg(std::string msg)
@@ -43,25 +44,31 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserHttpMsg(std::string msg)
             pos = msg.find("\r\n", currentIndex);
             if (pos == std::string::npos)
                 return STATUS::STATUS_ERROR;
-            currentIndex = pos + 2;
-            if (parserRequest(msg.substr(0, pos)) == STATUS::STATUS_SUCCESS)
+            if (parserRequest(msg.substr(currentIndex, pos)) == STATUS::STATUS_SUCCESS)
                 parser_status = ParserStatus::parser_head;
             else
                 return STATUS_ERROR;
+            currentIndex = pos + 2;
         }
         else if (parser_status == ParserStatus::parser_head)
         {
             pos = msg.find("\r\n", currentIndex);
             if (pos == std::string::npos)
                 return STATUS_ERROR;
-            currentIndex = pos + 2;
             if (pos == currentIndex) //means no head line now
             {
                 if (request.method == httpRequest::Method::POST)
                     parser_status = ParserStatus::parser_body;
+                else
+                    parser_status = ParserStatus::parser_finish;
             }
-            else if (parserHeader(msg.substr(currentIndex, pos - currentIndex)) != STATUS_SUCCESS)
-                return STATUS_ERROR;
+            else
+            {
+                if (parserHeader(msg.substr(currentIndex, pos - currentIndex)) != STATUS_SUCCESS)
+                    return STATUS_ERROR;
+                else
+                    currentIndex = pos + 2;
+            }
         }
         else if (parser_status == ParserStatus::parser_body)
         {
@@ -93,15 +100,18 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     if (pos == std::string::npos)
         return STATUS_ERROR;
     auto pos_sig = requestLine.substr(start, pos - start).find('?');
-    if (pos_sig == std::string::npos)
+    if (pos_sig != std::string::npos)
     {
         request.file_name = requestLine.substr(start, pos_sig - start);
         request.query = requestLine.substr(pos_sig + 1, pos - pos_sig - 1);
     }
     else
     {
-        request.file_name = requestLine.substr(start, pos);
+        request.file_name = requestLine.substr(start, pos - start);
     }
+    if (request.file_name == "/")
+        request.file_name = "/index.html";
+    request.file_name = root_dir / request.file_name.substr(1);
     std::string version_string = requestLine.substr(pos + 1, requestLine.length() - pos - 1);
     if (version_string == "HTTP/1.1")
         request.version = httpRequest::Version::v11;
@@ -118,7 +128,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserHeader(std::string headLi
     auto pos = headLine.find(' ');
     if (pos == std::string::npos)
         return STATUS_ERROR;
-    request.headers[headLine.substr(0, pos)] = headLine.substr(pos + 1, headLine.length() - pos - 1);
+    request.headers[headLine.substr(0, pos - 1)] = headLine.substr(pos + 1, headLine.length() - pos - 1);
     return STATUS_SUCCESS;
 }
 
@@ -134,8 +144,10 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
     }
     if (request.method == httpRequest::Method::GET || request.method == httpRequest::Method::HEAD)
     {
-        if (!fs::exists(fs::path(request.file_name)))
+        if (!fs::exists(request.file_name))
         {
+            response.headers["Connection"] = "Close";
+            response.headers.erase("Keep-Alive");
             response.status_code = httpResponse::StatusCode::c404NotFound;
             response.status_msg = "Not Found";
             return STATUS_ERROR;
@@ -165,9 +177,22 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
     return STATUS_SUCCESS;
 }
 
+void Fire::App::HttpData::reset()
+{
+    request.file_name.clear();
+    request.body.clear();
+    request.query.clear();
+    request.headers.clear();
+
+    response.status_msg.clear();
+    response.body.clear();
+    response.headers.clear();
+}
+
 void Fire::App::httpResponse::makeString(std::string &msg)
 {
     msg += "HTTP/1.1 " + std::to_string(status_code) + " " + status_msg + "\r\n";
+    msg += "Server: fire\r\n";
     for (const auto &header:headers)
     {
         msg += header.first;

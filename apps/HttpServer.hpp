@@ -17,7 +17,7 @@ namespace Fire
         class HttpServer
         {
         public:
-            explicit HttpServer(eventLoop *loop, uint16_t port, int threadNum = 4);
+            explicit HttpServer(eventLoop *loop, uint16_t port, std::string _root_dir = ".", int threadNum = 4);
 
             void Start();
 
@@ -26,6 +26,7 @@ namespace Fire
 
             std::map<std::shared_ptr<TcpConnection>, std::shared_ptr<App::HttpData>> Conn2Http;
             TcpServer server;
+            std::string root_dir;
         };
     }
 }

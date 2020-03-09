@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 
-int main()
+int main(int argc, char **argv)
 {
     //for timer test
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -56,7 +56,10 @@ int main()
     server.start();
 
     //for http server test
-    Fire::App::HttpServer http_server(&event_loop, 8070);
+    std::string root_dir = "../../";
+    if (argc != 1)
+        root_dir = argv[1];
+    Fire::App::HttpServer http_server(&event_loop, 8076, root_dir, 0);
     http_server.Start();
     event_loop.loop();
     return 0;

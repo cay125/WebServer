@@ -53,9 +53,9 @@ void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn
 Fire::TcpConnection::TcpConnection(eventLoop *loop, int fd, netAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr),
                                                                              state(STATE::connected)
 {
-    connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this));
+    connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this), false);
     connChannel.setWriteCallback(std::bind(&TcpConnection::HandleWrite, this), false);
-    connChannel.setCloseCallback(std::bind(&TcpConnection::HandleClose, this));
+    connChannel.setCloseCallback(std::bind(&TcpConnection::HandleClose, this), false);
 }
 
 void Fire::TcpConnection::HandleRead()
@@ -144,6 +144,8 @@ void Fire::TcpConnection::Established()
     event_loop->runInLoop([this]()
                           {
                               state = STATE::connected;
+                              connChannel.enableReadCallback();
+                              connChannel.enableCloseCallback();
                               if (connectionCallback)
                                   connectionCallback(shared_from_this());
                           });

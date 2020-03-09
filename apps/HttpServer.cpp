@@ -15,7 +15,6 @@ void Fire::App::HttpServer::HandleConnect(std::shared_ptr<Fire::TcpConnection> c
     {
         std::shared_ptr<HttpData> httpUnit(new HttpData());
         Conn2Http[conn] = httpUnit;
-        std::cout<<"sss: "<<httpUnit.use_count()<<"\n";
         conn->setMessageCallback(std::bind(&HttpData::HandleRead, httpUnit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
     else

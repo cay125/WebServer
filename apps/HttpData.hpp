@@ -13,6 +13,17 @@ namespace Fire
     {
         using namespace Fire;
 
+        class cType
+        {
+        public:
+            static void typeInit();
+
+            static std::string GetType(std::string suffix);
+
+        private:
+            static std::map<std::string, std::string> suffix2type;
+        };
+
         class httpRequest
         {
         public:
@@ -28,7 +39,23 @@ namespace Fire
             Version version;
             std::string file_name;
             std::string query;
-            std::map<std::string, std::string> entity;
+            std::string body;
+            std::map<std::string, std::string> headers;
+        };
+
+        class httpResponse
+        {
+        public:
+            enum StatusCode
+            {
+                c200ok = 200, c404NotFound = 404, c400BadRequest = 400, c301moved = 301
+            };
+            StatusCode status_code;
+            std::string status_msg;
+            std::string body;
+            std::map<std::string, std::string> headers;
+
+            void makeString(std::string &msg);
         };
 
 
@@ -38,8 +65,12 @@ namespace Fire
             {
                 STATUS_SUCCESS, STATUS_ERROR
             };
+            enum ParserStatus
+            {
+                parser_request, parser_head, parser_body, parser_analyse, parser_finish
+            };
         public:
-            HttpData() = default;
+            HttpData();
 
             void HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len);
 
@@ -51,7 +82,11 @@ namespace Fire
 
             STATUS parserHeader(std::string headLine);
 
+            STATUS analyseRequest();
+
             httpRequest request;
+            httpResponse response;
+            const int DEFAULT_ALIVE_TIME = 10 * 60 * 1000;
         };
     }
 

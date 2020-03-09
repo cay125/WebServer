@@ -27,6 +27,7 @@ namespace Fire
             std::map<std::shared_ptr<TcpConnection>, std::shared_ptr<App::HttpData>> Conn2Http;
             TcpServer server;
             std::string root_dir;
+            eventLoop *event_loop;
         };
     }
 }

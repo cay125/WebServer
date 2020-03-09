@@ -17,6 +17,11 @@ namespace Fire
     class TcpConnection : public std::enable_shared_from_this<TcpConnection>
     {
     public:
+        enum STATE
+        {
+            connected, closed
+        };
+
         TcpConnection(TcpConnection &) = delete;
 
         TcpConnection &operator=(TcpConnection &) = delete;
@@ -33,6 +38,10 @@ namespace Fire
 
         void HandleError();
 
+        void Established();
+
+        STATE connectionState();
+
         void setConnectionCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb);
 
         void setCloseCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb);
@@ -40,9 +49,11 @@ namespace Fire
         void setMessageCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>, const char *, ssize_t)> &&cb);
 
     private:
+        STATE state;
         eventLoop *event_loop;
         Channel connChannel;
         netAddr clientAddr;
+        Buffer inputBuffer;
         Buffer outputBuffer;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> connectionCallback;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> closeCallback;

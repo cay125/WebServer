@@ -36,6 +36,7 @@ void Fire::TcpServer::newConnection(int fd, Fire::netAddr addr)
     conn->setConnectionCallback(std::move(connectionCallback));
     conn->setMessageCallback(std::move(messageCallback));
     conn->setCloseCallback(std::bind(&TcpServer::removeConnection, this, std::placeholders::_1));
+    conn->Established();
     connSet.insert(conn);
 }
 
@@ -49,7 +50,8 @@ void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn
                           });
 }
 
-Fire::TcpConnection::TcpConnection(eventLoop *loop, int fd, netAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr)
+Fire::TcpConnection::TcpConnection(eventLoop *loop, int fd, netAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr),
+                                                                             state(STATE::connected)
 {
     connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this));
     connChannel.setWriteCallback(std::bind(&TcpConnection::HandleWrite, this), false);
@@ -87,6 +89,7 @@ void Fire::TcpConnection::HandleWrite()
 void Fire::TcpConnection::HandleClose()
 {
     std::cout << "one connection closed from Ip: " << clientAddr.GetAddr() << " Port: " << clientAddr.GetPort() << "\n";
+    state = STATE::closed;
     connDestroyed();
     closeCallback(shared_from_this());
 }
@@ -134,4 +137,19 @@ void Fire::TcpConnection::connDestroyed()
     event_loop->removeChannel(&connChannel);
     connChannel.clearCallback();
     close(connChannel.GetMonitorFd());
+}
+
+void Fire::TcpConnection::Established()
+{
+    event_loop->runInLoop([this]()
+                          {
+                              state = STATE::connected;
+                              if (connectionCallback)
+                                  connectionCallback(shared_from_this());
+                          });
+}
+
+Fire::TcpConnection::STATE Fire::TcpConnection::connectionState()
+{
+    return state;
 }

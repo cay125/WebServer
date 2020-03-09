@@ -22,6 +22,7 @@ void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, con
     {
         response.status_code = httpResponse::StatusCode::c400BadRequest;
         response.status_msg = "Bad Request";
+        response.headers["Connection"] = "Close";
     }
     else
     {
@@ -200,8 +201,29 @@ void Fire::App::httpResponse::makeString(std::string &msg)
         msg += header.second;
         msg += "\r\n";
     }
-    msg += "\r\n";
-    msg += body;
+    if (status_code == httpResponse::StatusCode::c200ok)
+    {
+        msg += "\r\n";
+        msg += body;
+    }
+    else
+    {
+        std::string error_body;
+        generateErrorString(error_body, status_code, status_msg);
+        msg += "Content-Type: " + cType::GetType("default") + "\r\n";
+        msg += "Content-Length: " + std::to_string(error_body.length()) + "\r\n";
+        msg += "\r\n";
+        msg += error_body;
+    }
+
+}
+
+void Fire::App::httpResponse::generateErrorString(std::string &msg, const StatusCode &_status_code, const std::string &_status_msg)
+{
+    msg += "<html><title>ERROR HAPPEN</title>";
+    msg += "<body bgcolor=\"ffffff\">";
+    msg += std::to_string(_status_code) + ' ' + _status_msg;
+    msg += "<hr><em> haha's Web Server</em>\n</body></html>";
 }
 
 void Fire::App::cType::typeInit()

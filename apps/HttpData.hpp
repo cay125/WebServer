@@ -59,6 +59,8 @@ namespace Fire
             std::map<std::string, std::string> headers;
 
             void makeString(std::string &msg);
+
+            void generateErrorString(std::string &msg, const StatusCode &_status_code, const std::string &_status_msg);
         };
 
 

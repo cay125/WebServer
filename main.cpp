@@ -7,7 +7,7 @@
 #include "TcpServer.hpp"
 #include "HttpServer.hpp"
 #include <unistd.h>
-
+#include "timerQueue.hpp"
 
 int main(int argc, char **argv)
 {
@@ -23,7 +23,7 @@ int main(int argc, char **argv)
                                             }), true);
     itimerspec time_long;
     memset(&time_long, 0, sizeof(time_long));
-    time_long.it_interval.tv_sec = 1;
+    time_long.it_interval.tv_sec = 0;
     time_long.it_value.tv_sec = 1;
     timerfd_settime(fd, 0, &time_long, nullptr);
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 
     //for echo server test
     std::cout << "max hardware thread: " << std::thread::hardware_concurrency() << "\n";
-    Fire::TcpServer server(&event_loop, 8079, std::thread::hardware_concurrency() - 1);
+    Fire::TcpServer server(&event_loop, 8079, 0);
     server.setMessageCallback([](std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len)
                               {
                                   fwrite(buf, len, 1, stdout);
@@ -59,8 +59,14 @@ int main(int argc, char **argv)
     std::string root_dir = "../../";
     if (argc != 1)
         root_dir = argv[1];
-    Fire::App::HttpServer http_server(&event_loop, 8076, root_dir, 0);
+    Fire::App::HttpServer http_server(&event_loop, 8072, root_dir, 0);
     http_server.Start();
+
+    Fire::timerQueue queue(&event_loop);
+    queue.addTimer([]()
+                   { std::cout << "timer queue event 1s\n"; }, std::chrono::seconds(1));
+    queue.addTimer([]()
+                   { std::cout << "timer queue event 5s\n"; }, std::chrono::seconds(5));
     event_loop.loop();
     return 0;
 }

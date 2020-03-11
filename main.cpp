@@ -1,16 +1,17 @@
 #include <iostream>
 #include <sys/timerfd.h>
+#include <unistd.h>
 #include "eventLoop.hpp"
 #include "Channel.hpp"
-#include "string.h"
 #include "Acceptor.hpp"
 #include "TcpServer.hpp"
 #include "HttpServer.hpp"
-#include <unistd.h>
 #include "timerQueue.hpp"
+#include "asyncLogger.hpp"
 
 int main(int argc, char **argv)
 {
+    FLOG << "LOG TEST!!";
     //for timer test
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     Fire::eventLoop event_loop;

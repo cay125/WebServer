@@ -49,12 +49,15 @@ namespace Fire
         void addTimer(Callback &&cb, const chrono::duration<rep, period> &timeout)
         {
             std::shared_ptr<timerNode> timer(new timerNode(std::move(cb), timeout));
-            bool isChanged = false;
-            if (timers.empty() || timer->GetExpireTime() < timers.begin()->first)
-                isChanged = true;
-            timers.insert(std::make_pair(timer->GetExpireTime(), timer));
-            if (isChanged)
-                resetTimerFd(timer->GetExpireTime());
+            event_loop->runInLoop([this, timer]()
+                                  {
+                                      bool isChanged = false;
+                                      if (timers.empty() || timer->GetExpireTime() < timers.begin()->first)
+                                          isChanged = true;
+                                      timers.insert(std::make_pair(timer->GetExpireTime(), timer));
+                                      if (isChanged)
+                                          resetTimerFd(timer->GetExpireTime());
+                                  });
         }
 
         void cancelTimer();

@@ -7,6 +7,7 @@
 
 #include "TcpServer.hpp"
 #include "HttpData.hpp"
+#include "timerQueue.hpp"
 
 namespace Fire
 {
@@ -25,6 +26,7 @@ namespace Fire
             void HandleConnect(std::shared_ptr<TcpConnection> conn);
 
             std::map<std::shared_ptr<TcpConnection>, std::shared_ptr<App::HttpData>> Conn2Http;
+            timerQueue timer_queue;
             TcpServer server;
             std::string root_dir;
             eventLoop *event_loop;

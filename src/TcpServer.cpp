@@ -81,9 +81,15 @@ void Fire::TcpConnection::HandleWrite()
     }
     outputBuffer.Remove(n);
     if (outputBuffer.readableBytes() == 0)
+    {
         connChannel.disableWriteCallback();
+        if (writeCalback)
+            writeCalback(shared_from_this());
+    }
     else
+    {
         std::cout << "Going to write more data: " << outputBuffer.readableBytes() << " bytes\n";
+    }
 }
 
 void Fire::TcpConnection::HandleClose()
@@ -99,20 +105,42 @@ void Fire::TcpConnection::HandleError()
 
 }
 
-void Fire::TcpConnection::send(std::string msg)
+void Fire::TcpConnection::Shutdown()
 {
-    ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
-    if (n < 0)
-    {
-        std::cout << "Error: write data failed\n";
-        n = 0;
-    }
-    if (n < msg.size())
-    {
-        outputBuffer.Appand(msg.data() + n, msg.size() - n);
-        connChannel.enableWriteCallback();
-        std::cout << "Going to write more data: " << msg.size() - n << " bytes\n";
-    }
+    // maybe we should consider if any data are not send?
+    event_loop->runInLoop([this]()
+                          {
+                              HandleClose();
+                          });
+}
+
+void Fire::TcpConnection::setWriteCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb)
+{
+    writeCalback = cb;
+}
+
+void Fire::TcpConnection::send(const std::string &msg)
+{
+    event_loop->runInLoop([this, msg]()
+                          {
+                              ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
+                              if (n < 0)
+                              {
+                                  std::cout << "Error: write data failed\n";
+                                  n = 0;
+                              }
+                              if (n < msg.size())
+                              {
+                                  outputBuffer.Appand(msg.data() + n, msg.size() - n);
+                                  connChannel.enableWriteCallback();
+                                  std::cout << "Going to write more data: " << msg.size() - n << " bytes\n";
+                              }
+                              else
+                              {
+                                  if (writeCalback)
+                                      writeCalback(shared_from_this());
+                              }
+                          });
 }
 
 void Fire::TcpConnection::setConnectionCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb)

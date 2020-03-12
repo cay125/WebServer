@@ -5,7 +5,7 @@
 #include "eventLoop.hpp"
 #include <sys/epoll.h>
 
-Fire::Channel::Channel(Fire::eventLoop *loop, const int fd) : event_loop(loop), event_fd(fd)
+Fire::Channel::Channel(Fire::eventLoop *loop, const int fd) : event_loop(loop), event_fd(fd), register_status(0)
 {
     expect_event_flags |= EPOLLET;
 }
@@ -73,18 +73,28 @@ void Fire::Channel::setCloseCallback(Fire::Channel::eventCallback &&cb, bool ena
 void Fire::Channel::enableWriteCallback()
 {
     expect_event_flags |= EPOLLOUT;
+    register_status |= RegisterStatusMask::write;
     event_loop->updateChannel(this);
 }
 
 void Fire::Channel::disableWriteCallback()
 {
     expect_event_flags &= ~EPOLLOUT;
+    register_status &= ~RegisterStatusMask::write;
     event_loop->updateChannel(this);
 }
 
 void Fire::Channel::enableReadCallback()
 {
     expect_event_flags |= EPOLLIN;
+    register_status |= RegisterStatusMask::read;
+    event_loop->updateChannel(this);
+}
+
+void Fire::Channel::disableReadCallback()
+{
+    expect_event_flags &= ~EPOLLIN;
+    register_status &= ~RegisterStatusMask::read;
     event_loop->updateChannel(this);
 }
 

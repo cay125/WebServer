@@ -15,6 +15,10 @@ namespace Fire
     class Channel
     {
     public:
+        enum RegisterStatusMask
+        {
+            write = 0x01, read = 0x02
+        };
         typedef std::function<void()> eventCallback;
 
         Channel(Channel &) = delete;
@@ -45,14 +49,19 @@ namespace Fire
 
         void enableReadCallback();
 
+        void disableReadCallback();
+
         void enableErrorCallback();
 
         void enableCloseCallback();
+
+        uint8_t GetRegisterStatus();
 
         int GetMonitorFd();
 
     private:
         Fire::eventLoop *event_loop;
+        uint8_t register_status;
         const int event_fd;
         uint32_t receive_event_flags, expect_event_flags;
         eventCallback writeCallback;

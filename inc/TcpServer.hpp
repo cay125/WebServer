@@ -28,19 +28,15 @@ namespace Fire
 
         TcpConnection(eventLoop *loop, int fd, netAddr _addr);
 
-        void send(std::string msg);
-
-        void HandleRead();
-
-        void HandleWrite();
-
-        void HandleClose();
-
-        void HandleError();
+        void send(const std::string &msg);
 
         void Established();
 
+        void Shutdown();
+
         STATE connectionState();
+
+        void setWriteCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb); //for data finished
 
         void setConnectionCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb);
 
@@ -49,6 +45,14 @@ namespace Fire
         void setMessageCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>, const char *, ssize_t)> &&cb);
 
     private:
+        void HandleRead();
+
+        void HandleWrite();
+
+        void HandleClose();
+
+        void HandleError();
+
         STATE state;
         eventLoop *event_loop;
         Channel connChannel;
@@ -56,6 +60,7 @@ namespace Fire
         Buffer inputBuffer;
         Buffer outputBuffer;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> connectionCallback;
+        std::function<void(std::shared_ptr<Fire::TcpConnection>)> writeCalback;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> closeCallback;
         std::function<void(std::shared_ptr<Fire::TcpConnection>, const char *, ssize_t)> messageCallback;
 
@@ -70,8 +75,6 @@ namespace Fire
     public:
         explicit TcpServer(eventLoop *loop, uint16_t port, int thread_num = 4);
 
-        void newConnection(int fd, netAddr addr);
-
         void start();
 
         void setConnectionCallback(connFcn &&cb);
@@ -79,6 +82,8 @@ namespace Fire
         void setMessageCallback(msgFcn &&cb);
 
     private:
+        void newConnection(int fd, netAddr addr);
+
         std::set<std::shared_ptr<Fire::TcpConnection>> connSet;
         eventLoopThreadPool thread_pool;
         eventLoop *event_loop;

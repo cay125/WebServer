@@ -6,7 +6,7 @@
 
 Fire::App::HttpServer::HttpServer(eventLoop *loop, uint16_t port, std::string _root_dir, int threadNum) : server(loop, port, threadNum),
                                                                                                           root_dir(std::move(_root_dir)),
-                                                                                                          event_loop(loop)
+                                                                                                          event_loop(loop), timer_queue(loop)
 {
     server.setConnectionCallback(std::bind(&HttpServer::HandleConnect, this, std::placeholders::_1));
 }
@@ -15,8 +15,9 @@ void Fire::App::HttpServer::HandleConnect(std::shared_ptr<Fire::TcpConnection> c
 {
     if (conn->connectionState() == TcpConnection::connected)
     {
-        std::shared_ptr<HttpData> httpUnit(new HttpData(root_dir));
+        std::shared_ptr<HttpData> httpUnit(new HttpData(&timer_queue, root_dir));
         conn->setMessageCallback(std::bind(&HttpData::HandleRead, httpUnit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        conn->setWriteCallback(std::bind(&HttpData::HandleWriteFinish, httpUnit, std::placeholders::_1));
         event_loop->runInLoop([this, httpUnit, conn]()
                               { Conn2Http[conn] = httpUnit; });
     }

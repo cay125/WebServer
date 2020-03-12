@@ -9,11 +9,23 @@
 
 std::map<std::string, std::string> Fire::App::cType::suffix2type;
 
-Fire::App::HttpData::HttpData(std::string _root_dir) : root_dir(_root_dir)
+Fire::App::HttpData::HttpData(timerQueue *_timer_queue, std::string _root_dir) : timer_queue(_timer_queue), root_dir(_root_dir), keepAlive(false)
 {
     if (!root_dir.is_absolute())
         root_dir = fs::canonical(root_dir);
     cType::typeInit();
+}
+
+void Fire::App::HttpData::HandleWriteFinish(std::shared_ptr<Fire::TcpConnection> p)
+{
+    if (!keepAlive)
+        p->Shutdown();
+    else
+        timer_queue->addTimer([p]()
+                              {
+                                  p->Shutdown();
+                                  std::cout << "oen connection closed by timer\n";
+                              }, std::chrono::milliseconds(DEFAULT_ALIVE_TIME));
 }
 
 void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len)
@@ -141,6 +153,11 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
         {
             response.headers["Connection"] = " Keep-Alive";
             response.headers["Keep-Alive"] = "timeout=" + std::to_string(DEFAULT_ALIVE_TIME);
+            keepAlive = true;
+        }
+        else
+        {
+            keepAlive = false;
         }
     }
     if (request.method == httpRequest::Method::GET || request.method == httpRequest::Method::HEAD)
@@ -188,6 +205,8 @@ void Fire::App::HttpData::reset()
     response.status_msg.clear();
     response.body.clear();
     response.headers.clear();
+
+    keepAlive = false;
 }
 
 void Fire::App::httpResponse::makeString(std::string &msg)

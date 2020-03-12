@@ -6,6 +6,7 @@
 #define FIRESERVER_HTTPDATA_HPP
 
 #include "TcpServer.hpp"
+#include "timerQueue.hpp"
 #include <filesystem>
 
 namespace fs=std::filesystem;
@@ -75,9 +76,11 @@ namespace Fire
                 parser_request, parser_head, parser_body, parser_analyse, parser_finish
             };
         public:
-            explicit HttpData(std::string _root_dir);
+            explicit HttpData(timerQueue *_timer_queue, std::string _root_dir);
 
             void HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len);
+
+            void HandleWriteFinish(std::shared_ptr<Fire::TcpConnection> p);
 
         private:
 
@@ -95,6 +98,8 @@ namespace Fire
             httpResponse response;
             fs::path root_dir;
             const int DEFAULT_ALIVE_TIME = 10 * 60 * 1000;
+            bool keepAlive;
+            timerQueue *timer_queue;
         };
     }
 

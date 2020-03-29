@@ -97,9 +97,10 @@ namespace Fire
             httpRequest request;
             httpResponse response;
             fs::path root_dir;
-            const int DEFAULT_ALIVE_TIME = 10 * 60 * 1000;
+            const int DEFAULT_ALIVE_TIME = 2 * 60 * 1000;
             bool keepAlive;
             timerQueue *timer_queue;
+            bool timer_start = false;
         };
     }
 

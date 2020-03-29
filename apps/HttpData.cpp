@@ -2,6 +2,7 @@
 // Created by xiangpu on 20-3-8.
 //
 #include "HttpData.hpp"
+#include "asyncLogger.hpp"
 #include <iostream>
 #include <unistd.h>
 #include <fcntl.h>
@@ -19,13 +20,20 @@ Fire::App::HttpData::HttpData(timerQueue *_timer_queue, std::string _root_dir) :
 void Fire::App::HttpData::HandleWriteFinish(std::shared_ptr<Fire::TcpConnection> p)
 {
     if (!keepAlive)
+    {
+        FLOG << "active close one short connection";
         p->Shutdown();
-    else
+    }
+    else if (!timer_start)
+    {
+        timer_start = true;
+        FLOG << "add timer";
         timer_queue->addTimer([p]()
                               {
                                   p->Shutdown();
-                                  std::cout << "oen connection closed by timer\n";
+                                  FLOG << "oen connection closed by timer";
                               }, std::chrono::milliseconds(DEFAULT_ALIVE_TIME));
+    }
 }
 
 void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len)
@@ -124,6 +132,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     }
     if (request.file_name == "/")
         request.file_name = "/index.html";
+    FLOG << "GET: " << request.file_name;
     request.file_name = root_dir / request.file_name.substr(1);
     std::string version_string = requestLine.substr(pos + 1, requestLine.length() - pos - 1);
     if (version_string == "HTTP/1.1")

@@ -113,6 +113,11 @@ uint32_t Fire::Channel::getEvent()
     return expect_event_flags;
 }
 
+uint8_t Fire::Channel::GetRegisterStatus()
+{
+    return register_status;
+}
+
 void Fire::Channel::clearCallback()
 {
     readCallback = nullptr;

@@ -2,6 +2,7 @@
 // Created by xiangpu on 20-3-2.
 //
 #include "TcpServer.hpp"
+#include "asyncLogger.hpp"
 #include <iostream>
 #include <unistd.h>
 
@@ -30,7 +31,7 @@ void Fire::TcpServer::setMessageCallback(msgFcn &&cb)
 
 void Fire::TcpServer::newConnection(int fd, Fire::netAddr addr)
 {
-    std::cout << "one connection established from Ip: " << addr.GetAddr() << " Port: " << addr.GetPort() << "\n";
+    FLOG << "one connection established from Ip: " << addr.GetAddr() << " Port: " << addr.GetPort();
     eventLoop *pool = thread_pool.GetNextThread();
     std::shared_ptr<TcpConnection> conn(new TcpConnection(pool, fd, addr));
     conn->setConnectionCallback(std::move(connectionCallback));
@@ -94,7 +95,7 @@ void Fire::TcpConnection::HandleWrite()
 
 void Fire::TcpConnection::HandleClose()
 {
-    std::cout << "one connection closed from Ip: " << clientAddr.GetAddr() << " Port: " << clientAddr.GetPort() << "\n";
+    FLOG << "one connection closed from Ip: " << clientAddr.GetAddr() << " Port: " << clientAddr.GetPort();
     state = STATE::closed;
     connDestroyed();
     closeCallback(shared_from_this());
@@ -123,22 +124,29 @@ void Fire::TcpConnection::send(const std::string &msg)
 {
     event_loop->runInLoop([this, msg]()
                           {
-                              ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
-                              if (n < 0)
+                              if (!(connChannel.GetRegisterStatus() & Channel::RegisterStatusMask::write))
                               {
-                                  std::cout << "Error: write data failed\n";
-                                  n = 0;
-                              }
-                              if (n < msg.size())
-                              {
-                                  outputBuffer.Appand(msg.data() + n, msg.size() - n);
-                                  connChannel.enableWriteCallback();
-                                  std::cout << "Going to write more data: " << msg.size() - n << " bytes\n";
+                                  ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
+                                  if (n < 0)
+                                  {
+                                      std::cout << "Error: write data failed\n";
+                                      n = 0;
+                                  }
+                                  if (n < msg.size())
+                                  {
+                                      outputBuffer.Appand(msg.data() + n, msg.size() - n);
+                                      connChannel.enableWriteCallback();
+                                      std::cout << "Going to write more data: " << msg.size() - n << " bytes\n";
+                                  }
+                                  else
+                                  {
+                                      if (writeCalback)
+                                          writeCalback(shared_from_this());
+                                  }
                               }
                               else
                               {
-                                  if (writeCalback)
-                                      writeCalback(shared_from_this());
+                                  outputBuffer.Appand(msg.data(), msg.size());
                               }
                           });
 }

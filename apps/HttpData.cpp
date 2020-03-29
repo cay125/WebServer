@@ -10,7 +10,7 @@
 
 std::map<std::string, std::string> Fire::App::cType::suffix2type;
 
-Fire::App::HttpData::HttpData(timerQueue *_timer_queue, std::string _root_dir) : timer_queue(_timer_queue), root_dir(_root_dir), keepAlive(false)
+Fire::App::HttpData::HttpData(std::unordered_map<std::string, connFcn> *_url2cb, timerQueue *_timer_queue, std::string _root_dir) : timer_queue(_timer_queue), root_dir(_root_dir), keepAlive(false), url2cb(_url2cb)
 {
     if (!root_dir.is_absolute())
         root_dir = fs::canonical(root_dir);
@@ -48,9 +48,17 @@ void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, con
     {
         analyseRequest();
     }
-    std::string outputBuf;
-    response.makeString(outputBuf);
-    p->send(outputBuf);
+    if (url2cb->count(request.original_url))
+    {
+        auto cb = url2cb->operator[](request.original_url);
+        cb(p);
+    }
+    else
+    {
+        std::string outputBuf;
+        response.makeString(outputBuf);
+        p->send(outputBuf);
+    }
     reset();
 }
 
@@ -123,11 +131,13 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     auto pos_sig = requestLine.substr(start, pos - start).find('?');
     if (pos_sig != std::string::npos)
     {
+        request.original_url = requestLine.substr(start, pos_sig - start);
         request.file_name = requestLine.substr(start, pos_sig - start);
         request.query = requestLine.substr(pos_sig + 1, pos - pos_sig - 1);
     }
     else
     {
+        request.original_url = requestLine.substr(start, pos - start);
         request.file_name = requestLine.substr(start, pos - start);
     }
     if (request.file_name == "/")
@@ -171,6 +181,8 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
     }
     if (request.method == httpRequest::Method::GET || request.method == httpRequest::Method::HEAD)
     {
+        if (url2cb->count(request.original_url) && url2cb->operator[](request.original_url))
+            return STATUS_SUCCESS;
         if (!fs::exists(request.file_name))
         {
             response.headers["Connection"] = "Close";

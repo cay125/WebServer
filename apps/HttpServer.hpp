@@ -15,12 +15,16 @@ namespace Fire
     {
         using namespace Fire;
 
+        typedef std::unordered_map<std::string, connFcn> UrlToCallbackMap;
+
         class HttpServer
         {
         public:
             explicit HttpServer(eventLoop *loop, uint16_t port, std::string _root_dir = ".", int threadNum = 4);
 
             void Start();
+
+            void RegisterHandler(std::string url, connFcn &&callback);
 
         private:
             void HandleConnect(std::shared_ptr<TcpConnection> conn);
@@ -30,6 +34,7 @@ namespace Fire
             TcpServer server;
             std::string root_dir;
             eventLoop *event_loop;
+            UrlToCallbackMap url2cb;
         };
     }
 }

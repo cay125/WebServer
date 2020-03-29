@@ -11,13 +11,18 @@ Fire::App::HttpServer::HttpServer(eventLoop *loop, uint16_t port, std::string _r
     server.setConnectionCallback(std::bind(&HttpServer::HandleConnect, this, std::placeholders::_1));
 }
 
+void Fire::App::HttpServer::RegisterHandler(std::string url, connFcn &&callback)
+{
+    url2cb[url] = std::move(callback);
+}
+
 void Fire::App::HttpServer::HandleConnect(std::shared_ptr<Fire::TcpConnection> conn)
 {
     if (conn->connectionState() == TcpConnection::connected)
     {
-        std::shared_ptr<HttpData> httpUnit(new HttpData(&timer_queue, root_dir));
+        std::shared_ptr<HttpData> httpUnit(new HttpData(&url2cb, &timer_queue, root_dir));
         conn->setMessageCallback(std::bind(&HttpData::HandleRead, httpUnit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
-        conn->setWriteCallback(std::bind(&HttpData::HandleWriteFinish, httpUnit, std::placeholders::_1));
+        //conn->setWriteCallback(std::bind(&HttpData::HandleWriteFinish, httpUnit, std::placeholders::_1));
         event_loop->runInLoop([this, httpUnit, conn]()
                               { Conn2Http[conn] = httpUnit; });
     }

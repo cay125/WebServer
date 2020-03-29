@@ -44,6 +44,7 @@ namespace Fire
             std::string file_name;
             std::string query;
             std::string body;
+            std::string original_url;
             std::map<std::string, std::string> headers;
         };
 
@@ -76,7 +77,11 @@ namespace Fire
                 parser_request, parser_head, parser_body, parser_analyse, parser_finish
             };
         public:
-            explicit HttpData(timerQueue *_timer_queue, std::string _root_dir);
+            HttpData(HttpData &) = delete;
+
+            HttpData &operator=(HttpData &) = delete;
+
+            explicit HttpData(std::unordered_map<std::string, connFcn> *_url2cb, timerQueue *_timer_queue, std::string _root_dir);
 
             void HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len);
 
@@ -101,6 +106,7 @@ namespace Fire
             bool keepAlive;
             timerQueue *timer_queue;
             bool timer_start = false;
+            std::unordered_map<std::string, connFcn> *url2cb;
         };
     }
 

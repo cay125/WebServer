@@ -57,12 +57,16 @@ int main(int argc, char **argv)
     server.start();
 
     //for http server test
-    std::string root_dir = "../../resource";
+    std::string root_dir = "../../../resource";
     if (argc != 1)
         root_dir = argv[1];
     Fire::App::HttpServer http_server(&event_loop, 8072, root_dir, 0);
     http_server.RegisterHandler("/proxy", [](std::shared_ptr<Fire::TcpConnection> p)
-    { std::cout << "Routing!!\n"; });
+    {
+        std::cout << "Routing!!\n";
+        std::string msg="fucking master\n";
+        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +"+std::to_string(msg.length())+"\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n"+msg);
+    });
     http_server.Start();
 
     Fire::timerQueue queue(&event_loop);

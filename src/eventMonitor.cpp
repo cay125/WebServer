@@ -52,7 +52,10 @@ void Fire::eventMonitor::addEvent(int fd, uint32_t event_flags)
     temp_event.data.fd = fd;
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_ADD, fd, &temp_event) == -1)
+    {
         std::cout << "add event failed\n";
+        perror("reason");
+    }
 }
 
 void Fire::eventMonitor::modEvent(int fd, uint32_t event_flags)
@@ -62,7 +65,10 @@ void Fire::eventMonitor::modEvent(int fd, uint32_t event_flags)
     temp_event.data.fd = fd;
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_MOD, fd, &temp_event) == -1)
+    {
         std::cout << "mod event failed\n";
+        perror("reason");
+    }
 }
 
 void Fire::eventMonitor::delEvent(int fd, uint32_t event_flags)
@@ -72,7 +78,10 @@ void Fire::eventMonitor::delEvent(int fd, uint32_t event_flags)
     temp_event.data.fd = fd;
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_DEL, fd, &temp_event) == -1)
+    {
         std::cout << "del event failed\n";
+        perror("reason");
+    }
 }
 
 

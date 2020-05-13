@@ -125,3 +125,8 @@ void Fire::Channel::clearCallback()
     errorCallback = nullptr;
     closeCallback = nullptr;
 }
+
+void Fire::Channel::remove()
+{
+    event_loop->removeChannel(this);
+}

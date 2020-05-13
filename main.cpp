@@ -8,6 +8,7 @@
 #include "HttpServer.hpp"
 #include "timerQueue.hpp"
 #include "asyncLogger.hpp"
+#include "Connector.hpp"
 
 int main(int argc, char **argv)
 {
@@ -64,8 +65,8 @@ int main(int argc, char **argv)
     http_server.RegisterHandler("/proxy", [](std::shared_ptr<Fire::TcpConnection> p)
     {
         std::cout << "Routing!!\n";
-        std::string msg="fucking master\n";
-        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +"+std::to_string(msg.length())+"\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n"+msg);
+        std::string msg = "fucking master\n";
+        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +" + std::to_string(msg.length()) +"\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n" + msg);
     });
     http_server.Start();
 
@@ -74,6 +75,19 @@ int main(int argc, char **argv)
                    { std::cout << "timer queue event 1s\n"; }, std::chrono::seconds(1));
     queue.addTimer([]()
                    { std::cout << "timer queue event 5s\n"; }, std::chrono::seconds(5));
+
+    //for Connector test
+    Fire::Connector conn(&event_loop, Fire::netAddr("36.152.44.95", 80));
+    conn.setNewConnCallback([](int fd)
+                            {
+                                std::cout << "active connection established\n";
+                            });
+    conn.Start();
+    queue.addTimer([&]()
+                   {
+                       std::cout << "going to stop connection\n";
+                       conn.Stop();
+                   }, std::chrono::seconds(2));
     event_loop.loop();
     return 0;
 }

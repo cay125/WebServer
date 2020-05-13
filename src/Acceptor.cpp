@@ -9,7 +9,7 @@
 #include <iostream>
 
 Fire::Acceptor::Acceptor(eventLoop *loop, netAddr addr) : event_loop(loop), acceptor_sock(Socket::createSocket()),
-                                                           acceptor_channel(loop, acceptor_sock.GetSocketFd())
+                                                          acceptor_channel(loop, acceptor_sock.GetSocketFd())
 {
 
     acceptor_sock.setBindAddr(addr);
@@ -57,7 +57,7 @@ Fire::Socket::Socket(int fd) : sock_fd(fd)
 
 void Fire::Socket::closeSock(int fd)
 {
-    close(fd);
+    ::close(fd);
 }
 
 int Fire::Socket::acceptOneConn(netAddr &_addr)
@@ -98,6 +98,24 @@ int Fire::Socket::createSocket()
     if (sockfd < 0)
         std::cout << "Error: Createing socket\n";
     return sockfd;
+}
+
+int Fire::Socket::connect(netAddr &_addr)
+{
+    sockaddr_in addr;
+    _addr.GetSockAddr(addr);
+    int res = ::connect(sock_fd, (sockaddr *) &addr, sizeof(addr));
+    if (res < 0)
+    {
+        std::cout << "Error: Connect remote host\n";
+        perror("Reason");
+    }
+    return res;
+}
+
+void Fire::Socket::close()
+{
+    ::close(sock_fd);
 }
 
 void Fire::netAddr::GetSockAddr(sockaddr_in &_addr)

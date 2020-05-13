@@ -7,6 +7,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++17")
 
 include_directories(${PROJECT_SOURCE_DIR}/inc ${PROJECT_SOURCE_DIR}/apps ${PROJECT_SOURCE_DIR}/Log)
 
-add_executable(fireServer main.cpp inc/eventLoop.hpp src/eventLoop.cpp inc/Channel.hpp src/Channel.cpp inc/eventMonitor.hpp src/eventMonitor.cpp inc/Acceptor.hpp src/Acceptor.cpp inc/TcpServer.hpp src/TcpServer.cpp inc/Buffer.hpp src/Buffer.cpp inc/eventThreadPool.hpp src/eventThreadPool.cpp inc/timerQueue.hpp src/timerQueue.cpp apps/HttpServer.cpp apps/HttpServer.hpp apps/HttpData.cpp apps/HttpData.hpp Log/LogFile.cpp Log/LogFile.hpp Log/asyncLogger.cpp Log/asyncLogger.hpp)
+add_executable(fireServer main.cpp inc/eventLoop.hpp src/eventLoop.cpp inc/Channel.hpp src/Channel.cpp inc/eventMonitor.hpp src/eventMonitor.cpp inc/Acceptor.hpp src/Acceptor.cpp inc/TcpServer.hpp src/TcpServer.cpp inc/Buffer.hpp src/Buffer.cpp inc/eventThreadPool.hpp src/eventThreadPool.cpp inc/timerQueue.hpp src/timerQueue.cpp apps/HttpServer.cpp apps/HttpServer.hpp apps/HttpData.cpp apps/HttpData.hpp Log/LogFile.cpp Log/LogFile.hpp Log/asyncLogger.cpp Log/asyncLogger.hpp inc/Connector.hpp src/Connector.cpp)
 
 target_link_libraries(fireServer -lpthread)

@@ -49,6 +49,9 @@ namespace Fire
 
         int listening();
 
+        int connect(netAddr &_addr);
+
+        void close();
 
         int setBindAddr(netAddr &_addr);
 

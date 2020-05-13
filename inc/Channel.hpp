@@ -35,6 +35,8 @@ namespace Fire
 
         void clearCallback();
 
+        void remove();
+
         void setWriteCallback(eventCallback &&cb, bool enable = true);
 
         void setReadCallback(eventCallback &&cb, bool enable = true);

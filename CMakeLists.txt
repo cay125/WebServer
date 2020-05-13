@@ -5,8 +5,26 @@ project(fireServer)
 #set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++17")
 
-include_directories(${PROJECT_SOURCE_DIR}/inc ${PROJECT_SOURCE_DIR}/apps ${PROJECT_SOURCE_DIR}/Log)
-
-add_executable(fireServer main.cpp inc/eventLoop.hpp src/eventLoop.cpp inc/Channel.hpp src/Channel.cpp inc/eventMonitor.hpp src/eventMonitor.cpp inc/Acceptor.hpp src/Acceptor.cpp inc/TcpServer.hpp src/TcpServer.cpp inc/Buffer.hpp src/Buffer.cpp inc/eventThreadPool.hpp src/eventThreadPool.cpp inc/timerQueue.hpp src/timerQueue.cpp apps/HttpServer.cpp apps/HttpServer.hpp apps/HttpData.cpp apps/HttpData.hpp Log/LogFile.cpp Log/LogFile.hpp Log/asyncLogger.cpp Log/asyncLogger.hpp inc/Connector.hpp src/Connector.cpp)
+include_directories(
+        ${PROJECT_SOURCE_DIR}/net
+        ${PROJECT_SOURCE_DIR}/apps
+        ${PROJECT_SOURCE_DIR}/utils
+)
+set(SOURCE_FILES
+        ${PROJECT_SOURCE_DIR}/net/Acceptor.cpp
+        ${PROJECT_SOURCE_DIR}/net/Buffer.cpp
+        ${PROJECT_SOURCE_DIR}/net/Channel.cpp
+        ${PROJECT_SOURCE_DIR}/net/Connector.cpp
+        ${PROJECT_SOURCE_DIR}/net/eventLoop.cpp
+        ${PROJECT_SOURCE_DIR}/net/eventMonitor.cpp
+        ${PROJECT_SOURCE_DIR}/net/eventThreadPool.cpp
+        ${PROJECT_SOURCE_DIR}/net/TcpServer.cpp
+        ${PROJECT_SOURCE_DIR}/net/timerQueue.cpp
+        ${PROJECT_SOURCE_DIR}/utils/asyncLogger.cpp
+        ${PROJECT_SOURCE_DIR}/utils/LogFile.cpp
+        ${PROJECT_SOURCE_DIR}/apps/HttpData.cpp
+        ${PROJECT_SOURCE_DIR}/apps/HttpServer.cpp
+)
+add_executable(fireServer main.cpp ${SOURCE_FILES})
 
 target_link_libraries(fireServer -lpthread)

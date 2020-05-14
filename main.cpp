@@ -9,6 +9,7 @@
 #include "timerQueue.hpp"
 #include "asyncLogger.hpp"
 #include "Connector.hpp"
+#include "TcpClient.hpp"
 
 int main(int argc, char **argv)
 {
@@ -66,7 +67,8 @@ int main(int argc, char **argv)
     {
         std::cout << "Routing!!\n";
         std::string msg = "fucking master\n";
-        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +" + std::to_string(msg.length()) +"\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n" + msg);
+        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +" + std::to_string(msg.length()) +
+                "\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n" + msg);
     });
     http_server.Start();
 
@@ -88,6 +90,20 @@ int main(int argc, char **argv)
                        std::cout << "going to stop connection\n";
                        conn.Stop();
                    }, std::chrono::seconds(2));
+
+    //for TcpClient test
+    Fire::TcpClient client(&event_loop, Fire::netAddr("36.152.44.95", 80));
+    client.setNewConnCallback([](std::shared_ptr<Fire::TcpConnection> p)
+                              {
+                                  std::cout << "client connection established\n";
+                                  p->send("GET / HTTP/1.1\r\n\r\n");
+                              });
+    client.setMessageCallback([&](std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len)
+                              {
+                                  fwrite(buf, len, 1, stdout);
+                                  client.Disconnect();
+                              });
+    client.Connect();
     event_loop.loop();
     return 0;
 }

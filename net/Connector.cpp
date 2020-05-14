@@ -25,11 +25,17 @@ void Fire::Connector::Stop()
     {
         event_loop->runInLoop([this]()
                               {
-                                  conn_channel->remove();
-                                  conn_channel->clearCallback();
-                                  conn_channel.reset();
-                                  conn_sock->close();
-                                  conn_sock.reset();
+                                  if (conn_channel)
+                                  {
+                                      conn_channel->remove();
+                                      conn_channel->clearCallback();
+                                      conn_channel.reset();
+                                  }
+                                  if(conn_sock)
+                                  {
+                                      conn_sock->close();
+                                      conn_sock.reset();
+                                  }
                                   state = CONN_STATE::disconnected;
                               });
     }
@@ -85,7 +91,12 @@ void Fire::Connector::Connecting()
 void Fire::Connector::HandleWrite()
 {
     if (state == CONN_STATE::connected && newConnCallback)
+    {
+        conn_channel->remove();
+        conn_channel->clearCallback();
+        conn_channel.reset();
         newConnCallback(conn_sock->GetSocketFd());
+    }
 }
 
 void Fire::Connector::setNewConnCallback(std::function<void(int)> &&cb)

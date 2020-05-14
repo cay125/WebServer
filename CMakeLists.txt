@@ -18,6 +18,7 @@ set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/net/eventLoop.cpp
         ${PROJECT_SOURCE_DIR}/net/eventMonitor.cpp
         ${PROJECT_SOURCE_DIR}/net/eventThreadPool.cpp
+        ${PROJECT_SOURCE_DIR}/net/TcpClient.cpp
         ${PROJECT_SOURCE_DIR}/net/TcpServer.cpp
         ${PROJECT_SOURCE_DIR}/net/timerQueue.cpp
         ${PROJECT_SOURCE_DIR}/utils/asyncLogger.cpp

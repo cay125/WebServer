@@ -103,6 +103,8 @@ void Fire::eventMonitor::updateChannel(Fire::Channel *channel)
 void Fire::eventMonitor::removeChannel(Fire::Channel *channel)
 {
     int fd = channel->GetMonitorFd();
+    if (!Fd2Channel.count(fd))
+        return;
     delEvent(fd, channel->getEvent());
     Fd2Channel.erase(fd);
 }

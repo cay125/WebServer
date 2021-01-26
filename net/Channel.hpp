@@ -10,7 +10,7 @@
 
 namespace Fire
 {
-    class eventLoop;
+    class EventLoop;
 
     class Channel
     {
@@ -25,7 +25,7 @@ namespace Fire
 
         Channel &operator=(Channel &) = delete;
 
-        Channel(eventLoop *loop, int fd);
+        Channel(EventLoop *loop, int fd);
 
         void processEvent();
 
@@ -62,7 +62,7 @@ namespace Fire
         int GetMonitorFd();
 
     private:
-        Fire::eventLoop *event_loop;
+        Fire::EventLoop *event_loop;
         uint8_t register_status;
         const int event_fd;
         uint32_t receive_event_flags, expect_event_flags;

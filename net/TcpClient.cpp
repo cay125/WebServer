@@ -2,9 +2,9 @@
 // Created by xiangpu on 20-5-13.
 //
 
-#include "TcpClient.hpp"
+#include "net/TcpClient.hpp"
 
-Fire::TcpClient::TcpClient(Fire::eventLoop *loop, netAddr remoteAddr) : event_loop(loop), connUtil(loop, remoteAddr), clientAddr(remoteAddr)
+Fire::TcpClient::TcpClient(Fire::EventLoop *loop, NetAddr remoteAddr) : event_loop(loop), connUtil(loop, remoteAddr), clientAddr(remoteAddr)
 {
     connUtil.setNewConnCallback(std::bind(&TcpClient::HandleNewConnection, this, std::placeholders::_1));
 }

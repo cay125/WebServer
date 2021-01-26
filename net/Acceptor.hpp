@@ -5,20 +5,21 @@
 #ifndef FIRESERVER_ACCEPTOR_HPP
 #define FIRESERVER_ACCEPTOR_HPP
 
-#include "eventLoop.hpp"
-#include "Channel.hpp"
-#include <sys/socket.h>
 #include <string>
+#include <sys/socket.h>
 #include <netinet/in.h>
+
+#include "net/EventLoop.hpp"
+#include "net/Channel.hpp"
 
 namespace Fire
 {
-    class netAddr
+    class NetAddr
     {
     public:
-        netAddr(std::string _ipAddr, uint16_t _port);
+        NetAddr(std::string _ipAddr, uint16_t _port);
 
-        explicit netAddr(sockaddr_in &_addr);
+        explicit NetAddr(sockaddr_in &_addr);
 
         uint16_t GetPort();
 
@@ -43,17 +44,17 @@ namespace Fire
     public:
         explicit Socket(int fd);
 
-        int acceptOneConn(netAddr &_addr);
+        int acceptOneConn(NetAddr &_addr);
 
         int GetSocketFd();
 
         int listening();
 
-        int connect(netAddr &_addr);
+        int connect(NetAddr &_addr);
 
         void close();
 
-        int setBindAddr(netAddr &_addr);
+        int setBindAddr(NetAddr &_addr);
 
         static int createSocket();
 
@@ -65,13 +66,13 @@ namespace Fire
 
     class Acceptor
     {
-        typedef std::function<void(int, netAddr)> newConnFcn;
+        typedef std::function<void(int, NetAddr)> newConnFcn;
     public:
         Acceptor(Acceptor &) = delete;
 
         Acceptor &operator=(Acceptor &) = delete;
 
-        explicit Acceptor(eventLoop *loop, netAddr addr);
+        explicit Acceptor(EventLoop *loop, NetAddr addr);
 
         void setNewConnCallback(newConnFcn &&fcn);
 
@@ -81,7 +82,7 @@ namespace Fire
         void HandleRead();
 
         newConnFcn newConnCallback;
-        eventLoop *event_loop;
+        EventLoop *event_loop;
         Socket acceptor_sock;
         Channel acceptor_channel;
     };

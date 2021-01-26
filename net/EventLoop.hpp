@@ -7,12 +7,13 @@
 
 #include <thread>
 #include <mutex>
-#include "Channel.hpp"
-#include "eventMonitor.hpp"
+
+#include "net/Channel.hpp"
+#include "net/EventMonitor.hpp"
 
 namespace Fire
 {
-    class eventLoop
+    class EventLoop
     {
         typedef std::function<void()> eventCallback;
     public:
@@ -21,13 +22,13 @@ namespace Fire
             STOP, RUNNING, SLEEP
         };
 
-        explicit eventLoop();
+        explicit EventLoop();
 
-        ~eventLoop() = default;
+        ~EventLoop() = default;
 
-        eventLoop(eventLoop &) = delete;
+        EventLoop(EventLoop &) = delete;
 
-        eventLoop &operator=(eventLoop &) = delete;
+        EventLoop &operator=(EventLoop &) = delete;
 
         void loop();
 
@@ -56,11 +57,11 @@ namespace Fire
 
         std::thread::id own_thread_id;
         STATUS status;
-        eventMonitor monitor;
+        EventMonitor monitor;
         std::mutex m_mutex;
         int wakeFd;
         Channel wakeChannel;
-        std::vector<Fire::eventLoop::eventCallback> pendingCBs;
+        std::vector<Fire::EventLoop::eventCallback> pendingCBs;
         bool isDoPendng;
     };
 }

@@ -1,14 +1,15 @@
 //
 // Created by xiangpu on 20-3-2.
 //
-#include "Acceptor.hpp"
+#include <iostream>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
-#include <iostream>
 
-Fire::Acceptor::Acceptor(eventLoop *loop, netAddr addr) : event_loop(loop), acceptor_sock(Socket::createSocket()),
+#include "net/Acceptor.hpp"
+
+Fire::Acceptor::Acceptor(EventLoop *loop, NetAddr addr) : event_loop(loop), acceptor_sock(Socket::createSocket()),
                                                           acceptor_channel(loop, acceptor_sock.GetSocketFd())
 {
 
@@ -24,7 +25,7 @@ void Fire::Acceptor::listening()
 
 void Fire::Acceptor::HandleRead()
 {
-    netAddr clientAddr("0.0.0.0", 0);
+    NetAddr clientAddr("0.0.0.0", 0);
     int fd = acceptor_sock.acceptOneConn(clientAddr);
     newConnCallback(fd, clientAddr);
 }
@@ -34,9 +35,9 @@ void Fire::Acceptor::setNewConnCallback(Fire::Acceptor::newConnFcn &&fcn)
     newConnCallback = fcn;
 }
 
-const std::string Fire::netAddr::ANY_ADDR = "ANY_ADDR";
+const std::string Fire::NetAddr::ANY_ADDR = "ANY_ADDR";
 
-Fire::netAddr::netAddr(std::string _ipAddr, uint16_t _port)
+Fire::NetAddr::NetAddr(std::string _ipAddr, uint16_t _port)
 {
     if (_ipAddr != ANY_ADDR)
         net_addr = inet_addr(_ipAddr.c_str());
@@ -45,7 +46,7 @@ Fire::netAddr::netAddr(std::string _ipAddr, uint16_t _port)
     net_port = htons(_port);
 }
 
-Fire::netAddr::netAddr(sockaddr_in &_addr)
+Fire::NetAddr::NetAddr(sockaddr_in &_addr)
 {
     net_addr = _addr.sin_addr.s_addr;
     net_port = _addr.sin_port;
@@ -60,12 +61,12 @@ void Fire::Socket::closeSock(int fd)
     ::close(fd);
 }
 
-int Fire::Socket::acceptOneConn(netAddr &_addr)
+int Fire::Socket::acceptOneConn(NetAddr &_addr)
 {
     sockaddr_in addr;
     socklen_t sock_len = sizeof(addr);
     int client_sock = accept4(sock_fd, (sockaddr *) &addr, &sock_len, SOCK_NONBLOCK | SOCK_CLOEXEC);
-    _addr = netAddr(addr);
+    _addr = NetAddr(addr);
     return client_sock;
 }
 
@@ -77,7 +78,7 @@ int Fire::Socket::listening()
     return res;
 }
 
-int Fire::Socket::setBindAddr(Fire::netAddr &_addr)
+int Fire::Socket::setBindAddr(Fire::NetAddr &_addr)
 {
     sockaddr_in addr;
     _addr.GetSockAddr(addr);
@@ -100,7 +101,7 @@ int Fire::Socket::createSocket()
     return sockfd;
 }
 
-int Fire::Socket::connect(netAddr &_addr)
+int Fire::Socket::connect(NetAddr &_addr)
 {
     sockaddr_in addr;
     _addr.GetSockAddr(addr);
@@ -118,7 +119,7 @@ void Fire::Socket::close()
     ::close(sock_fd);
 }
 
-void Fire::netAddr::GetSockAddr(sockaddr_in &_addr)
+void Fire::NetAddr::GetSockAddr(sockaddr_in &_addr)
 {
     memset(&_addr, 0, sizeof(_addr));
     _addr.sin_family = AF_INET;
@@ -126,24 +127,24 @@ void Fire::netAddr::GetSockAddr(sockaddr_in &_addr)
     _addr.sin_addr.s_addr = GteNetAddr();
 }
 
-std::string Fire::netAddr::GetAddr()
+std::string Fire::NetAddr::GetAddr()
 {
     in_addr addr = {0};
     addr.s_addr = net_addr;
     return std::string(inet_ntoa(addr));
 }
 
-uint16_t Fire::netAddr::GetPort()
+uint16_t Fire::NetAddr::GetPort()
 {
     return ntohs(net_port);
 }
 
-uint32_t Fire::netAddr::GteNetAddr()
+uint32_t Fire::NetAddr::GteNetAddr()
 {
     return net_addr;
 }
 
-uint16_t Fire::netAddr::GetNetPort()
+uint16_t Fire::NetAddr::GetNetPort()
 {
     return net_port;
 }

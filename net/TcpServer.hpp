@@ -5,11 +5,12 @@
 #ifndef FIRESERVER_TCPSERVER_HPP
 #define FIRESERVER_TCPSERVER_HPP
 
-#include "eventLoop.hpp"
-#include "eventThreadPool.hpp"
-#include "Acceptor.hpp"
-#include "Buffer.hpp"
 #include <set>
+
+#include "net/EventLoop.hpp"
+#include "net/EventThreadPool.hpp"
+#include "net/Acceptor.hpp"
+#include "net/Buffer.hpp"
 
 namespace Fire
 {
@@ -26,7 +27,7 @@ namespace Fire
 
         TcpConnection &operator=(TcpConnection &) = delete;
 
-        TcpConnection(eventLoop *loop, int fd, netAddr _addr);
+        TcpConnection(EventLoop *loop, int fd, NetAddr _addr);
 
         void send(const std::string &msg);
 
@@ -34,7 +35,7 @@ namespace Fire
 
         void Shutdown();
 
-        eventLoop *GetLoop();
+        EventLoop *GetLoop();
 
         STATE connectionState();
 
@@ -56,9 +57,9 @@ namespace Fire
         void HandleError();
 
         STATE state;
-        eventLoop *event_loop;
+        EventLoop *event_loop;
         Channel connChannel;
-        netAddr clientAddr;
+        NetAddr clientAddr;
         Buffer inputBuffer;
         Buffer outputBuffer;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> connectionCallback;
@@ -75,7 +76,7 @@ namespace Fire
     class TcpServer
     {
     public:
-        explicit TcpServer(eventLoop *loop, uint16_t port, int thread_num = 4);
+        explicit TcpServer(EventLoop *loop, uint16_t port, int thread_num = 4);
 
         void start();
 
@@ -84,11 +85,11 @@ namespace Fire
         void setMessageCallback(msgFcn &&cb);
 
     private:
-        void newConnection(int fd, netAddr addr);
+        void newConnection(int fd, NetAddr addr);
 
         std::set<std::shared_ptr<Fire::TcpConnection>> connSet;
-        eventLoopThreadPool thread_pool;
-        eventLoop *event_loop;
+        EventLoopThreadPool thread_pool;
+        EventLoop *event_loop;
         Acceptor TcpAcceptor;
         connFcn connectionCallback;
         msgFcn messageCallback;

@@ -1,20 +1,22 @@
 //
 // Created by xiangpu on 20-2-29.
 //
-#include "eventLoop.hpp"
-#include "Channel.hpp"
 #include <iostream>
 #include <sys/eventfd.h>
 #include <unistd.h>
 
-Fire::eventLoop::eventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(RUNNING),
+#include "net/EventLoop.hpp"
+#include "net/Channel.hpp"
+
+
+Fire::EventLoop::EventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(RUNNING),
                                own_thread_id(std::this_thread::get_id()), isDoPendng(false)
 {
     std::cout << "Event loop is created in thread: " << std::this_thread::get_id() << "\n";
-    wakeChannel.setReadCallback(std::bind(&eventLoop::HandleRead, this), true);
+    wakeChannel.setReadCallback(std::bind(&EventLoop::HandleRead, this), true);
 }
 
-void Fire::eventLoop::HandleRead()
+void Fire::EventLoop::HandleRead()
 {
     uint64_t res = 0;
     ssize_t n = read(wakeFd, &res, sizeof(res));
@@ -22,13 +24,13 @@ void Fire::eventLoop::HandleRead()
         std::cout << "Error: read wrong bytes\n";
 }
 
-void Fire::eventLoop::wakeSelf()
+void Fire::EventLoop::wakeSelf()
 {
     uint64_t res = 1;
     write(wakeFd, &res, sizeof(res));
 }
 
-void Fire::eventLoop::doPendingCallback()
+void Fire::EventLoop::doPendingCallback()
 {
     isDoPendng = true;
     std::vector<eventCallback> cbs;
@@ -40,12 +42,12 @@ void Fire::eventLoop::doPendingCallback()
     isDoPendng = false;
 }
 
-bool Fire::eventLoop::isInCurrentThread()
+bool Fire::EventLoop::isInCurrentThread()
 {
     return std::this_thread::get_id() == own_thread_id;
 }
 
-void Fire::eventLoop::runInLoop(eventCallback &&cb)
+void Fire::EventLoop::runInLoop(eventCallback &&cb)
 {
     if (isInCurrentThread())
         cb();
@@ -53,7 +55,7 @@ void Fire::eventLoop::runInLoop(eventCallback &&cb)
         queueInLoop(std::move(cb));
 }
 
-void Fire::eventLoop::queueInLoop(Fire::eventLoop::eventCallback &&cb)
+void Fire::EventLoop::queueInLoop(Fire::EventLoop::eventCallback &&cb)
 {
     m_mutex.lock();
     pendingCBs.push_back(std::move(cb));
@@ -62,7 +64,7 @@ void Fire::eventLoop::queueInLoop(Fire::eventLoop::eventCallback &&cb)
         wakeSelf();
 }
 
-void Fire::eventLoop::loop()
+void Fire::EventLoop::loop()
 {
     if (!isInCurrentThread())
     {
@@ -83,19 +85,19 @@ void Fire::eventLoop::loop()
     }
 }
 
-void Fire::eventLoop::stopLoop()
+void Fire::EventLoop::stopLoop()
 {
     status = STOP;
     if (!isInCurrentThread())
         wakeSelf();
 }
 
-void Fire::eventLoop::updateChannel(Channel *channel)
+void Fire::EventLoop::updateChannel(Channel *channel)
 {
     monitor.updateChannel(channel);
 }
 
-void Fire::eventLoop::removeChannel(Fire::Channel *channel)
+void Fire::EventLoop::removeChannel(Fire::Channel *channel)
 {
     monitor.removeChannel(channel);
 }

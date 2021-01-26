@@ -5,9 +5,10 @@
 #ifndef FIRESERVER_HTTPDATA_HPP
 #define FIRESERVER_HTTPDATA_HPP
 
-#include "TcpServer.hpp"
-#include "timerQueue.hpp"
 #include <filesystem>
+
+#include "net/TcpServer.hpp"
+#include "net/TimerQueue.hpp"
 
 namespace fs=std::filesystem;
 
@@ -81,7 +82,7 @@ namespace Fire
 
             HttpData &operator=(HttpData &) = delete;
 
-            explicit HttpData(std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *_url2cb, timerQueue *_timer_queue, std::string _root_dir);
+            explicit HttpData(std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *_url2cb, TimerQueue *_timer_queue, std::string _root_dir);
 
             void HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len);
 
@@ -104,7 +105,7 @@ namespace Fire
             fs::path root_dir;
             const int DEFAULT_ALIVE_TIME = 2 * 60 * 1000;
             bool keepAlive;
-            timerQueue *timer_queue;
+            TimerQueue *timer_queue;
             bool timer_start = false;
             std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *url2cb;
         };

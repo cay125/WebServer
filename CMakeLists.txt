@@ -6,22 +6,20 @@ project(fireServer)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++17")
 
 include_directories(
-        ${PROJECT_SOURCE_DIR}/net
-        ${PROJECT_SOURCE_DIR}/apps
-        ${PROJECT_SOURCE_DIR}/utils
+        ${PROJECT_SOURCE_DIR}
 )
 set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/net/Acceptor.cpp
         ${PROJECT_SOURCE_DIR}/net/Buffer.cpp
         ${PROJECT_SOURCE_DIR}/net/Channel.cpp
         ${PROJECT_SOURCE_DIR}/net/Connector.cpp
-        ${PROJECT_SOURCE_DIR}/net/eventLoop.cpp
-        ${PROJECT_SOURCE_DIR}/net/eventMonitor.cpp
-        ${PROJECT_SOURCE_DIR}/net/eventThreadPool.cpp
+        ${PROJECT_SOURCE_DIR}/net/EventLoop.cpp
+        ${PROJECT_SOURCE_DIR}/net/EventMonitor.cpp
+        ${PROJECT_SOURCE_DIR}/net/EventThreadPool.cpp
         ${PROJECT_SOURCE_DIR}/net/TcpClient.cpp
         ${PROJECT_SOURCE_DIR}/net/TcpServer.cpp
-        ${PROJECT_SOURCE_DIR}/net/timerQueue.cpp
-        ${PROJECT_SOURCE_DIR}/utils/asyncLogger.cpp
+        ${PROJECT_SOURCE_DIR}/net/TimerQueue.cpp
+        ${PROJECT_SOURCE_DIR}/utils/AsyncLogger.cpp
         ${PROJECT_SOURCE_DIR}/utils/LogFile.cpp
         ${PROJECT_SOURCE_DIR}/apps/HttpData.cpp
         ${PROJECT_SOURCE_DIR}/apps/HttpServer.cpp

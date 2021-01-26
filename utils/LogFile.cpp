@@ -1,7 +1,7 @@
 //
 // Created by xiangpu on 20-3-10.
 //
-#include "LogFile.hpp"
+#include "utils/LogFile.hpp"
 
 Fire::fileWriter::fileWriter(std::string filename) : fp(fopen(filename.c_str(), "ae"))
 {

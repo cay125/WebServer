@@ -1,35 +1,36 @@
 //
 // Created by xiangpu on 20-3-4.
 //
-#include "eventThreadPool.hpp"
 #include <iostream>
 
-Fire::eventLoopThreadPool::eventLoopThreadPool(Fire::eventLoop *loop, int _threadNum) : baseLoop(loop), threadNum(_threadNum), threadIndex(0)
+#include "net/EventThreadPool.hpp"
+
+Fire::EventLoopThreadPool::EventLoopThreadPool(Fire::EventLoop *loop, int _threadNum) : baseLoop(loop), threadNum(_threadNum), threadIndex(0)
 {}
 
-void Fire::eventLoopThreadPool::Start()
+void Fire::EventLoopThreadPool::Start()
 {
     for (int i = 0; i < threadNum; i++)
     {
-        std::shared_ptr<eventLoopThread> t(new eventLoopThread);
+        std::shared_ptr<EventLoopThread> t(new EventLoopThread);
         threads.push_back(t);
         loops.push_back(t->start());
     }
 }
 
-Fire::eventLoop *Fire::eventLoopThreadPool::GetNextThread()
+Fire::EventLoop *Fire::EventLoopThreadPool::GetNextThread()
 {
     if (loops.empty())
         return baseLoop;
     return loops[(threadIndex++) % threadNum];
 }
 
-Fire::eventLoopThread::eventLoopThread() : event_loop(nullptr)
+Fire::EventLoopThread::EventLoopThread() : event_loop(nullptr)
 {}
 
-Fire::eventLoop *Fire::eventLoopThread::start()
+Fire::EventLoop *Fire::EventLoopThread::start()
 {
-    event_thread = std::thread(std::bind(&eventLoopThread::threadFcn, this));
+    event_thread = std::thread(std::bind(&EventLoopThread::threadFcn, this));
     if (!event_thread.joinable())
         std::cout << "Error: thread can not detach\n";
     std::unique_lock<std::mutex> lk(m_mutex);
@@ -41,9 +42,9 @@ Fire::eventLoop *Fire::eventLoopThread::start()
     return event_loop;
 }
 
-void Fire::eventLoopThread::threadFcn()
+void Fire::EventLoopThread::threadFcn()
 {
-    eventLoop loop;
+    EventLoop loop;
     std::unique_lock<std::mutex> lk(m_mutex);
     event_loop = &loop;
     m_cond.notify_one();

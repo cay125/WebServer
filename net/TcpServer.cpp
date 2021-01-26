@@ -1,12 +1,13 @@
 //
 // Created by xiangpu on 20-3-2.
 //
-#include "TcpServer.hpp"
-#include "asyncLogger.hpp"
 #include <iostream>
 #include <unistd.h>
 
-Fire::TcpServer::TcpServer(eventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, netAddr(netAddr::ANY_ADDR, port)),
+#include "net/TcpServer.hpp"
+#include "utils/AsyncLogger.hpp"
+
+Fire::TcpServer::TcpServer(EventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, NetAddr(NetAddr::ANY_ADDR, port)),
                                                                              thread_pool(loop, thread_num)
 {
     std::cout << "server is listening on port: " << port << "\n";
@@ -29,10 +30,10 @@ void Fire::TcpServer::setMessageCallback(msgFcn &&cb)
     messageCallback = cb;
 }
 
-void Fire::TcpServer::newConnection(int fd, Fire::netAddr addr)
+void Fire::TcpServer::newConnection(int fd, Fire::NetAddr addr)
 {
     FLOG << "one connection established from Ip: " << addr.GetAddr() << " Port: " << addr.GetPort();
-    eventLoop *pool = thread_pool.GetNextThread();
+    EventLoop *pool = thread_pool.GetNextThread();
     std::shared_ptr<TcpConnection> conn(new TcpConnection(pool, fd, addr));
     conn->setConnectionCallback(std::move(connectionCallback));
     conn->setMessageCallback(std::move(messageCallback));
@@ -51,7 +52,7 @@ void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn
                           });
 }
 
-Fire::TcpConnection::TcpConnection(eventLoop *loop, int fd, netAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr),
+Fire::TcpConnection::TcpConnection(EventLoop *loop, int fd, NetAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr),
                                                                              state(STATE::connected)
 {
     connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this), false);
@@ -115,7 +116,7 @@ void Fire::TcpConnection::Shutdown()
                           });
 }
 
-Fire::eventLoop *Fire::TcpConnection::GetLoop()
+Fire::EventLoop *Fire::TcpConnection::GetLoop()
 {
     return event_loop;
 }

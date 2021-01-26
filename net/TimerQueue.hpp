@@ -7,24 +7,25 @@
 
 #include <chrono>
 #include <sys/timerfd.h>
-#include "Channel.hpp"
-#include "eventLoop.hpp"
+
+#include "net/Channel.hpp"
+#include "net/EventLoop.hpp"
 
 namespace Fire
 {
     namespace chrono=std::chrono;
     typedef chrono::time_point<chrono::system_clock, chrono::nanoseconds> timeStamp;
 
-    class timerNode
+    class TimerNode
     {
         typedef std::function<void()> Callback;
     public:
-        timerNode(timerNode &) = delete;
+        TimerNode(TimerNode &) = delete;
 
-        timerNode &operator=(timerNode &) = delete;
+        TimerNode &operator=(TimerNode &) = delete;
 
         template<class rep, class period>
-        timerNode(Callback &&cb, const chrono::duration<rep, period> &timeout):timerCallback(cb),
+        TimerNode(Callback &&cb, const chrono::duration<rep, period> &timeout):timerCallback(cb),
                                                                                expire_time(chrono::system_clock::now() + timeout)
         {
 
@@ -39,16 +40,16 @@ namespace Fire
         timeStamp expire_time;
     };
 
-    class timerQueue
+    class TimerQueue
     {
         typedef std::function<void()> Callback;
     public:
-        explicit timerQueue(eventLoop *loop);
+        explicit TimerQueue(EventLoop *loop);
 
         template<class rep, class period>
         void addTimer(Callback &&cb, const chrono::duration<rep, period> &timeout)
         {
-            std::shared_ptr<timerNode> timer(new timerNode(std::move(cb), timeout));
+            std::shared_ptr<TimerNode> timer(new TimerNode(std::move(cb), timeout));
             event_loop->runInLoop([this, timer]()
                                   {
                                       bool isChanged = false;
@@ -63,10 +64,10 @@ namespace Fire
         void cancelTimer();
 
     private:
-        eventLoop *event_loop;
+        EventLoop *event_loop;
         int timerFd;
         Channel timerChannel;
-        std::multimap<timeStamp, std::shared_ptr<Fire::timerNode>> timers;
+        std::multimap<timeStamp, std::shared_ptr<Fire::TimerNode>> timers;
 
         static int createTimerFd();
 
@@ -78,7 +79,7 @@ namespace Fire
 
         void makeRestTime(itimerspec &rest_time, timeStamp next_expire_time);
 
-        std::vector<std::shared_ptr<Fire::timerNode>> getExpiredTimer();
+        std::vector<std::shared_ptr<Fire::TimerNode>> getExpiredTimer();
     };
 }
 

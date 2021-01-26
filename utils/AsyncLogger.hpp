@@ -5,11 +5,12 @@
 #ifndef FIRESERVER_ASYNCLOGGER_HPP
 #define FIRESERVER_ASYNCLOGGER_HPP
 
-#include "LogFile.hpp"
 #include <string.h>
 #include <vector>
 #include <thread>
 #include <condition_variable>
+
+#include "utils/LogFile.hpp"
 
 namespace Fire
 {

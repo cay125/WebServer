@@ -1,15 +1,18 @@
 #include <iostream>
 #include <sys/timerfd.h>
 #include <unistd.h>
-#include "eventLoop.hpp"
-#include "Channel.hpp"
-#include "Acceptor.hpp"
-#include "TcpServer.hpp"
-#include "HttpServer.hpp"
-#include "timerQueue.hpp"
-#include "asyncLogger.hpp"
-#include "Connector.hpp"
-#include "TcpClient.hpp"
+
+#include "net/EventLoop.hpp"
+#include "net/Channel.hpp"
+#include "net/Acceptor.hpp"
+#include "net/TcpServer.hpp"
+#include "net/TimerQueue.hpp"
+#include "net/Connector.hpp"
+#include "net/TcpClient.hpp"
+
+#include "apps/HttpServer.hpp"
+
+#include "utils/AsyncLogger.hpp"
 
 void proxy(std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
 {
@@ -22,7 +25,7 @@ void proxy(std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
         return;
     }
     auto loop = p->GetLoop();
-    Fire::TcpClient *client = new Fire::TcpClient(loop, Fire::netAddr(r.query, 80));
+    Fire::TcpClient *client = new Fire::TcpClient(loop, Fire::NetAddr(r.query, 80));
     client->setNewConnCallback([](std::shared_ptr<Fire::TcpConnection> p)
                                {
                                    std::cout << "client connection established\n";
@@ -44,7 +47,7 @@ int main(int argc, char **argv)
     FLOG << "LOG TEST!!";
     //for timer test
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
-    Fire::eventLoop event_loop;
+    Fire::EventLoop event_loop;
     Fire::Channel c(&event_loop, fd);
     c.setReadCallback(std::function<void()>([fd]()
                                             {
@@ -59,9 +62,9 @@ int main(int argc, char **argv)
     timerfd_settime(fd, 0, &time_long, nullptr);
 
     //for acceptor class test
-    Fire::netAddr listen_addr(Fire::netAddr::ANY_ADDR, 8080);
+    Fire::NetAddr listen_addr(Fire::NetAddr::ANY_ADDR, 8080);
     Fire::Acceptor ac(&event_loop, listen_addr);
-    ac.setNewConnCallback([](int fd, Fire::netAddr addr)
+    ac.setNewConnCallback([](int fd, Fire::NetAddr addr)
                           {
                               std::cout << "client: " << addr.GetPort() << " Ip: " << addr.GetAddr() << "\n";
                               write(fd, "echo\n", 5);
@@ -101,14 +104,14 @@ int main(int argc, char **argv)
     http_server.Start();
 
     //for timer queue test
-    Fire::timerQueue queue(&event_loop);
+    Fire::TimerQueue queue(&event_loop);
     queue.addTimer([]()
                    { std::cout << "timer queue event 1s\n"; }, std::chrono::seconds(1));
     queue.addTimer([]()
                    { std::cout << "timer queue event 5s\n"; }, std::chrono::seconds(5));
 
     //for Connector test
-    Fire::Connector conn(&event_loop, Fire::netAddr("36.152.44.95", 80));
+    Fire::Connector conn(&event_loop, Fire::NetAddr("36.152.44.95", 80));
     conn.setNewConnCallback([](int fd)
                             {
                                 std::cout << "active connection established\n";
@@ -121,7 +124,7 @@ int main(int argc, char **argv)
                    }, std::chrono::seconds(2));
 
     //for TcpClient test
-    Fire::TcpClient client(&event_loop, Fire::netAddr("36.152.44.95", 80));
+    Fire::TcpClient client(&event_loop, Fire::NetAddr("36.152.44.95", 80));
     client.setNewConnCallback([](std::shared_ptr<Fire::TcpConnection> p)
                               {
                                   std::cout << "client connection established\n";

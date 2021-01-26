@@ -1,10 +1,11 @@
 //
 // Created by xiangpu on 20-3-8.
 //
-#include "HttpServer.hpp"
 #include <iostream>
 
-Fire::App::HttpServer::HttpServer(eventLoop *loop, uint16_t port, std::string _root_dir, int threadNum) : server(loop, port, threadNum),
+#include "apps/HttpServer.hpp"
+
+Fire::App::HttpServer::HttpServer(EventLoop *loop, uint16_t port, std::string _root_dir, int threadNum) : server(loop, port, threadNum),
                                                                                                           root_dir(std::move(_root_dir)),
                                                                                                           event_loop(loop), timer_queue(loop)
 {

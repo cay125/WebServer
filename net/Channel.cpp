@@ -1,11 +1,12 @@
 //
 // Created by xiangpu on 20-2-29.
 //
-#include "Channel.hpp"
-#include "eventLoop.hpp"
 #include <sys/epoll.h>
 
-Fire::Channel::Channel(Fire::eventLoop *loop, const int fd) : event_loop(loop), event_fd(fd), register_status(0)
+#include "net/Channel.hpp"
+#include "net/EventLoop.hpp"
+
+Fire::Channel::Channel(Fire::EventLoop *loop, const int fd) : event_loop(loop), event_fd(fd), register_status(0)
 {
     expect_event_flags |= EPOLLET;
 }

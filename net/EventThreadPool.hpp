@@ -8,19 +8,20 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include "eventLoop.hpp"
+
+#include "net/EventLoop.hpp"
 
 namespace Fire
 {
-    class eventLoopThread
+    class EventLoopThread
     {
     public:
-        explicit eventLoopThread();
+        explicit EventLoopThread();
 
-        eventLoop *start();
+        EventLoop *start();
 
     private:
-        eventLoop *event_loop;
+        EventLoop *event_loop;
         std::thread event_thread;
         std::mutex m_mutex;
         std::condition_variable m_cond;
@@ -28,20 +29,20 @@ namespace Fire
         void threadFcn();
     };
 
-    class eventLoopThreadPool
+    class EventLoopThreadPool
     {
     public:
-        explicit eventLoopThreadPool(eventLoop *loop, int _threadNum);
+        explicit EventLoopThreadPool(EventLoop *loop, int _threadNum);
 
         void Start();
 
-        eventLoop *GetNextThread();
+        EventLoop *GetNextThread();
 
     private:
         uint32_t threadNum, threadIndex;
-        eventLoop *baseLoop;
-        std::vector<Fire::eventLoop *> loops;
-        std::vector<std::shared_ptr<Fire::eventLoopThread>> threads;
+        EventLoop *baseLoop;
+        std::vector<Fire::EventLoop *> loops;
+        std::vector<std::shared_ptr<Fire::EventLoopThread>> threads;
     };
 }
 

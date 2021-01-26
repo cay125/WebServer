@@ -5,8 +5,8 @@
 #ifndef FIRESERVER_CONNECTOR_H
 #define FIRESERVER_CONNECTOR_H
 
-#include "Acceptor.hpp"
-#include "timerQueue.hpp"
+#include "net/Acceptor.hpp"
+#include "net/TimerQueue.hpp"
 
 namespace Fire
 {
@@ -18,7 +18,7 @@ namespace Fire
             connected, disconnected
         };
 
-        Connector(eventLoop *_loop, netAddr _addr);
+        Connector(EventLoop *_loop, NetAddr _addr);
 
         Connector(Connector &) = delete;
 
@@ -44,12 +44,12 @@ namespace Fire
         void HandleWrite();
 
         std::function<void(int)> newConnCallback;
-        eventLoop *event_loop;
-        netAddr peerAddr;
+        EventLoop *event_loop;
+        NetAddr peerAddr;
         std::unique_ptr<Socket> conn_sock;
         std::unique_ptr<Channel> conn_channel;
         CONN_STATE state;
-        timerQueue queue;
+        TimerQueue queue;
     };
 }
 

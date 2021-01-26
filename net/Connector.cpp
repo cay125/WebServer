@@ -1,10 +1,11 @@
 //
 // Created by xiangpu on 20-5-12.
 //
-#include "Connector.hpp"
 #include <iostream>
 
-Fire::Connector::Connector(Fire::eventLoop *_loop, Fire::netAddr _addr) : event_loop(_loop), peerAddr(_addr), state(CONN_STATE::disconnected), queue(_loop)
+#include "net/Connector.hpp"
+
+Fire::Connector::Connector(Fire::EventLoop *_loop, Fire::NetAddr _addr) : event_loop(_loop), peerAddr(_addr), state(CONN_STATE::disconnected), queue(_loop)
 {
 
 }

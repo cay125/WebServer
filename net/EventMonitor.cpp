@@ -1,15 +1,16 @@
 //
 // Created by xiangpu on 20-2-29.
 //
-#include "eventMonitor.hpp"
-#include <string.h>
 #include <iostream>
+#include <string.h>
 
-Fire::eventMonitor::eventMonitor() : monitor_fd(epoll_create1(EPOLL_CLOEXEC)), event_details(1024)
+#include "net/EventMonitor.hpp"
+
+Fire::EventMonitor::EventMonitor() : monitor_fd(epoll_create1(EPOLL_CLOEXEC)), event_details(1024)
 {
 }
 
-std::vector<Fire::Channel *> Fire::eventMonitor::checkEvents()
+std::vector<Fire::Channel *> Fire::EventMonitor::checkEvents()
 {
     /*if (Fd2Channel.empty())
     {
@@ -25,7 +26,7 @@ std::vector<Fire::Channel *> Fire::eventMonitor::checkEvents()
     return GetActivatedChannels(numEvents);
 }
 
-std::vector<Fire::Channel *> Fire::eventMonitor::GetActivatedChannels(int count)
+std::vector<Fire::Channel *> Fire::EventMonitor::GetActivatedChannels(int count)
 {
     std::vector<Channel *> res_channels;
     for (int i = 0; i < count; i++)
@@ -43,7 +44,7 @@ std::vector<Fire::Channel *> Fire::eventMonitor::GetActivatedChannels(int count)
     return res_channels;
 }
 
-void Fire::eventMonitor::addEvent(int fd, uint32_t event_flags)
+void Fire::EventMonitor::addEvent(int fd, uint32_t event_flags)
 {
     if (event_details.size() < Fd2Channel.size())
         event_details.resize(2 * event_details.size());
@@ -58,7 +59,7 @@ void Fire::eventMonitor::addEvent(int fd, uint32_t event_flags)
     }
 }
 
-void Fire::eventMonitor::modEvent(int fd, uint32_t event_flags)
+void Fire::EventMonitor::modEvent(int fd, uint32_t event_flags)
 {
     epoll_event temp_event;
     bzero(&temp_event, sizeof(temp_event));
@@ -71,7 +72,7 @@ void Fire::eventMonitor::modEvent(int fd, uint32_t event_flags)
     }
 }
 
-void Fire::eventMonitor::delEvent(int fd, uint32_t event_flags)
+void Fire::EventMonitor::delEvent(int fd, uint32_t event_flags)
 {
     epoll_event temp_event;
     bzero(&temp_event, sizeof(temp_event));
@@ -85,7 +86,7 @@ void Fire::eventMonitor::delEvent(int fd, uint32_t event_flags)
 }
 
 
-void Fire::eventMonitor::updateChannel(Fire::Channel *channel)
+void Fire::EventMonitor::updateChannel(Fire::Channel *channel)
 {
     auto it = Fd2Channel.find(channel->GetMonitorFd());
     if (it == Fd2Channel.end())
@@ -100,7 +101,7 @@ void Fire::eventMonitor::updateChannel(Fire::Channel *channel)
 }
 
 
-void Fire::eventMonitor::removeChannel(Fire::Channel *channel)
+void Fire::EventMonitor::removeChannel(Fire::Channel *channel)
 {
     int fd = channel->GetMonitorFd();
     if (!Fd2Channel.count(fd))

@@ -5,8 +5,8 @@
 #ifndef FIRESERVER_TCPCLIENT_H
 #define FIRESERVER_TCPCLIENT_H
 
-#include "Connector.hpp"
-#include "TcpServer.hpp"
+#include "net/Connector.hpp"
+#include "net/TcpServer.hpp"
 
 namespace Fire
 {
@@ -17,7 +17,7 @@ namespace Fire
 
         TcpClient &operator=(TcpClient &) = delete;
 
-        TcpClient(eventLoop *loop, netAddr remoteAddr);
+        TcpClient(EventLoop *loop, NetAddr remoteAddr);
 
         void Connect();
 
@@ -32,9 +32,9 @@ namespace Fire
 
         void HandleClose(std::shared_ptr<TcpConnection> conn);
 
-        eventLoop *event_loop;
+        EventLoop *event_loop;
         Connector connUtil;
-        netAddr clientAddr;
+        NetAddr clientAddr;
         std::shared_ptr<Fire::TcpConnection> tcpConn;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> connectionCallback;
         std::function<void(std::shared_ptr<Fire::TcpConnection>)> writeCalback;

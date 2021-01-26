@@ -5,23 +5,24 @@
 #ifndef FIRESERVER_EVENTMONITOR_HPP
 #define FIRESERVER_EVENTMONITOR_HPP
 
-#include "Channel.hpp"
-#include "sys/epoll.h"
 #include <vector>
 #include <map>
 #include <memory>
+#include <sys/epoll.h>
+
+#include "net/Channel.hpp"
 
 
 namespace Fire
 {
-    class eventMonitor
+    class EventMonitor
     {
     public:
-        explicit eventMonitor();
+        explicit EventMonitor();
 
-        eventMonitor(eventMonitor &) = delete;
+        EventMonitor(EventMonitor &) = delete;
 
-        eventMonitor &operator=(eventMonitor &) = delete;
+        EventMonitor &operator=(EventMonitor &) = delete;
 
         void updateChannel(Channel *);
 

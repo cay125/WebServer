@@ -15,7 +15,7 @@ namespace Fire
     {
         using namespace Fire;
 
-        typedef std::unordered_map<std::string, connFcn> UrlToCallbackMap;
+        typedef std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> UrlToCallbackMap;
 
         class HttpServer
         {
@@ -24,7 +24,7 @@ namespace Fire
 
             void Start();
 
-            void RegisterHandler(std::string url, connFcn &&callback);
+            void RegisterHandler(std::string url, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)> &&callback);
 
         private:
             void HandleConnect(std::shared_ptr<TcpConnection> conn);

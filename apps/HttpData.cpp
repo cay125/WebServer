@@ -10,7 +10,8 @@
 
 std::map<std::string, std::string> Fire::App::cType::suffix2type;
 
-Fire::App::HttpData::HttpData(std::unordered_map<std::string, connFcn> *_url2cb, timerQueue *_timer_queue, std::string _root_dir) : timer_queue(_timer_queue), root_dir(_root_dir), keepAlive(false), url2cb(_url2cb)
+Fire::App::HttpData::HttpData(std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *_url2cb, timerQueue *_timer_queue, std::string _root_dir) : timer_queue(_timer_queue), root_dir(_root_dir),
+                                                                                                                                    keepAlive(false), url2cb(_url2cb)
 {
     if (!root_dir.is_absolute())
         root_dir = fs::canonical(root_dir);
@@ -51,7 +52,7 @@ void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, con
     if (url2cb->count(request.original_url))
     {
         auto cb = url2cb->operator[](request.original_url);
-        cb(p);
+        cb(p, request);
     }
     else
     {
@@ -131,6 +132,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     auto pos_sig = requestLine.substr(start, pos - start).find('?');
     if (pos_sig != std::string::npos)
     {
+        pos_sig+=start;
         request.original_url = requestLine.substr(start, pos_sig - start);
         request.file_name = requestLine.substr(start, pos_sig - start);
         request.query = requestLine.substr(pos_sig + 1, pos - pos_sig - 1);

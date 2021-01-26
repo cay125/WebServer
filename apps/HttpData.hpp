@@ -81,7 +81,7 @@ namespace Fire
 
             HttpData &operator=(HttpData &) = delete;
 
-            explicit HttpData(std::unordered_map<std::string, connFcn> *_url2cb, timerQueue *_timer_queue, std::string _root_dir);
+            explicit HttpData(std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *_url2cb, timerQueue *_timer_queue, std::string _root_dir);
 
             void HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len);
 
@@ -106,7 +106,7 @@ namespace Fire
             bool keepAlive;
             timerQueue *timer_queue;
             bool timer_start = false;
-            std::unordered_map<std::string, connFcn> *url2cb;
+            std::unordered_map<std::string, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)>> *url2cb;
         };
     }
 

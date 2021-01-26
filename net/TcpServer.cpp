@@ -115,6 +115,11 @@ void Fire::TcpConnection::Shutdown()
                           });
 }
 
+Fire::eventLoop *Fire::TcpConnection::GetLoop()
+{
+    return event_loop;
+}
+
 void Fire::TcpConnection::setWriteCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb)
 {
     writeCalback = cb;

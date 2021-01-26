@@ -34,6 +34,8 @@ namespace Fire
 
         void Shutdown();
 
+        eventLoop *GetLoop();
+
         STATE connectionState();
 
         void setWriteCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb); //for data finished

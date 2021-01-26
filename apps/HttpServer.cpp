@@ -11,7 +11,7 @@ Fire::App::HttpServer::HttpServer(eventLoop *loop, uint16_t port, std::string _r
     server.setConnectionCallback(std::bind(&HttpServer::HandleConnect, this, std::placeholders::_1));
 }
 
-void Fire::App::HttpServer::RegisterHandler(std::string url, connFcn &&callback)
+void Fire::App::HttpServer::RegisterHandler(std::string url, std::function<void(std::shared_ptr<Fire::TcpConnection>, Fire::App::httpRequest)> &&callback)
 {
     url2cb[url] = std::move(callback);
 }

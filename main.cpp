@@ -11,6 +11,34 @@
 #include "Connector.hpp"
 #include "TcpClient.hpp"
 
+void proxy(std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
+{
+    if (r.query.empty())
+    {
+        std::string msg = "Proy format error. Please try again. The valid format is [http://127.0.0.1:9099/proxy?http://www.so.com/robots.txt]\n";
+        std::cout << msg;
+        p->send("HTTP/1.1 200 OK\r\nServer: fire\r\nConnection:  Keep-Alive\r\nContent-Length: +" + std::to_string(msg.length()) +
+                "\r\nContent-Type: text/html\r\nKeep-Alive: timeout=120000\r\n\r\n" + msg);
+        return;
+    }
+    auto loop = p->GetLoop();
+    Fire::TcpClient *client = new Fire::TcpClient(loop, Fire::netAddr(r.query, 80));
+    client->setNewConnCallback([](std::shared_ptr<Fire::TcpConnection> p)
+                               {
+                                   std::cout << "client connection established\n";
+                                   p->send("GET / HTTP/1.1\r\n\r\n");
+                               });
+    client->setMessageCallback([p](std::shared_ptr<Fire::TcpConnection> p2, const char *buf, ssize_t len)
+                               {
+                                   std::string m;
+                                   for (int i = 0; i < len; i++)
+                                       m += buf[i];
+                                   p->send(m);
+                                   //client->Disconnect();
+                               });
+    client->Connect();
+}
+
 int main(int argc, char **argv)
 {
     FLOG << "LOG TEST!!";
@@ -62,8 +90,8 @@ int main(int argc, char **argv)
     std::string root_dir = "../../../resource";
     if (argc != 1)
         root_dir = argv[1];
-    Fire::App::HttpServer http_server(&event_loop, 8072, root_dir, 0);
-    http_server.RegisterHandler("/proxy", [](std::shared_ptr<Fire::TcpConnection> p)
+    Fire::App::HttpServer http_server(&event_loop, 8070, root_dir, 0);
+    http_server.RegisterHandler("/proxy", [](std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
     {
         std::cout << "Routing!!\n";
         std::string msg = "fucking master\n";
@@ -72,6 +100,7 @@ int main(int argc, char **argv)
     });
     http_server.Start();
 
+    //for timer queue test
     Fire::timerQueue queue(&event_loop);
     queue.addTimer([]()
                    { std::cout << "timer queue event 1s\n"; }, std::chrono::seconds(1));
@@ -104,6 +133,7 @@ int main(int argc, char **argv)
                                   client.Disconnect();
                               });
     client.Connect();
+    http_server.RegisterHandler("/fuck", &proxy);
     event_loop.loop();
     return 0;
 }

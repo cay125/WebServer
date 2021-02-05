@@ -32,7 +32,7 @@ void Fire::TcpServer::setMessageCallback(msgFcn &&cb)
 
 void Fire::TcpServer::newConnection(int fd, Fire::NetAddr addr)
 {
-    FLOG << "one connection established from Ip: " << addr.GetAddr() << " Port: " << addr.GetPort();
+    FLOG << "one connection established from Ip: " << addr.GetIpString() << " Port: " << addr.GetPort();
     EventLoop *pool = thread_pool.GetNextThread();
     std::shared_ptr<TcpConnection> conn(new TcpConnection(pool, fd, addr));
     conn->setConnectionCallback(std::move(connectionCallback));
@@ -96,7 +96,7 @@ void Fire::TcpConnection::HandleWrite()
 
 void Fire::TcpConnection::HandleClose()
 {
-    FLOG << "one connection closed from Ip: " << clientAddr.GetAddr() << " Port: " << clientAddr.GetPort();
+    FLOG << "one connection closed from Ip: " << clientAddr.GetIpString() << " Port: " << clientAddr.GetPort();
     state = STATE::closed;
     connDestroyed();
     closeCallback(shared_from_this());

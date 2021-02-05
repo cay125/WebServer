@@ -23,11 +23,13 @@ namespace Fire
 
         uint16_t GetPort();
 
-        std::string GetAddr();
+        std::string GetIpString();
 
-        uint16_t GetNetPort();
+        uint16_t GetPortNetOrder();
 
-        uint32_t GteNetAddr();
+        uint32_t GteIpNetOrder();
+
+        std::string GetUrlString();
 
         void GetSockAddr(sockaddr_in &_addr);
 

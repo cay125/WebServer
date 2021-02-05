@@ -2,8 +2,10 @@
 // Created by xiangpu on 20-3-2.
 //
 #include <iostream>
+#include <memory>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -39,11 +41,40 @@ const std::string Fire::NetAddr::ANY_ADDR = "ANY_ADDR";
 
 Fire::NetAddr::NetAddr(std::string _ipAddr, uint16_t _port)
 {
-    if (_ipAddr != ANY_ADDR)
-        net_addr = inet_addr(_ipAddr.c_str());
-    else
-        net_addr = htonl(INADDR_ANY);
     net_port = htons(_port);
+    if (_ipAddr == ANY_ADDR)
+    {
+        net_addr = htonl(INADDR_ANY);
+        return;
+    }
+
+    bool is_hostname = false;
+    for (size_t i = 0; i < _ipAddr.length(); i++)
+    {
+        if (std::isalpha(_ipAddr[i]))
+        {
+            is_hostname = true; //means the input parameter is a hostname
+            break;
+        }
+    }
+    addrinfo hint{}; //c++11 feature, value initialize all zero
+    hint.ai_family = AF_INET;
+    if (is_hostname)
+        hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV; //means we don't want to resolve anything
+    else 
+        hint.ai_flags = AI_ALL;
+    
+    addrinfo *resolved_addr = nullptr;
+    int ret = getaddrinfo(_ipAddr.c_str(), nullptr, &hint, &resolved_addr);
+    if (ret != 0 || resolved_addr == nullptr)
+    {
+        std::cout << "Error: Cannot resolve host.";
+        exit(1);
+    }
+    auto addrinfo_deleter = [](addrinfo *const x) { freeaddrinfo(x); };
+    std::unique_ptr<addrinfo, decltype(addrinfo_deleter)> wrapped_address(resolved_addr, std::move(addrinfo_deleter));
+
+    net_addr = (reinterpret_cast<sockaddr_in *>(wrapped_address->ai_addr))->sin_addr.s_addr; 
 }
 
 Fire::NetAddr::NetAddr(sockaddr_in &_addr)
@@ -123,11 +154,11 @@ void Fire::NetAddr::GetSockAddr(sockaddr_in &_addr)
 {
     memset(&_addr, 0, sizeof(_addr));
     _addr.sin_family = AF_INET;
-    _addr.sin_port = GetNetPort();
-    _addr.sin_addr.s_addr = GteNetAddr();
+    _addr.sin_port = GetPortNetOrder();
+    _addr.sin_addr.s_addr = GteIpNetOrder();
 }
 
-std::string Fire::NetAddr::GetAddr()
+std::string Fire::NetAddr::GetIpString()
 {
     in_addr addr = {0};
     addr.s_addr = net_addr;
@@ -139,12 +170,17 @@ uint16_t Fire::NetAddr::GetPort()
     return ntohs(net_port);
 }
 
-uint32_t Fire::NetAddr::GteNetAddr()
+uint32_t Fire::NetAddr::GteIpNetOrder()
 {
     return net_addr;
 }
 
-uint16_t Fire::NetAddr::GetNetPort()
+uint16_t Fire::NetAddr::GetPortNetOrder()
 {
     return net_port;
+}
+
+std::string Fire::NetAddr::GetUrlString()
+{
+    return GetIpString() + "+" + std::to_string(GetPort());
 }

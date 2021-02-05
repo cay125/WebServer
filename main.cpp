@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     Fire::Acceptor ac(&event_loop, listen_addr);
     ac.setNewConnCallback([](int fd, Fire::NetAddr addr)
                           {
-                              std::cout << "client: " << addr.GetPort() << " Ip: " << addr.GetAddr() << "\n";
+                              std::cout << "client: " << addr.GetPort() << " Ip: " << addr.GetIpString() << "\n";
                               write(fd, "echo\n", 5);
                               Fire::Socket::closeSock(fd);
                           });

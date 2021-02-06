@@ -2,6 +2,9 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
+#include <gflags/gflags.h>
+#include <glog/logging.h>
+
 #include "net/EventLoop.hpp"
 #include "net/Channel.hpp"
 #include "net/Acceptor.hpp"
@@ -13,6 +16,9 @@
 #include "apps/HttpServer.hpp"
 
 #include "utils/AsyncLogger.hpp"
+
+DEFINE_bool(background, false, "Wether program run in background?");
+DEFINE_string(resource_dir, "/home/nano/resource", "Directory of resource files");
 
 void proxy(std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
 {
@@ -44,6 +50,10 @@ void proxy(std::shared_ptr<Fire::TcpConnection> p, Fire::App::httpRequest r)
 
 int main(int argc, char **argv)
 {
+    gflags::ParseCommandLineFlags(&argc, &argv, true);
+    google::InitGoogleLogging(argv[0]);
+    FLAGS_log_dir = "/home/nano/Documents/webserver_log";
+
     FLOG << "LOG TEST!!";
     //for timer test
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
@@ -138,5 +148,8 @@ int main(int argc, char **argv)
     client.Connect();
     http_server.RegisterHandler("/fuck", &proxy);
     event_loop.loop();
+
+    gflags::ShutDownCommandLineFlags();
+    google::ShutdownGoogleLogging();
     return 0;
 }

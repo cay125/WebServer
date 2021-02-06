@@ -1,13 +1,14 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 
 project(fireServer)
 
 #set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -std=c++17")
 
-include_directories(
-        ${PROJECT_SOURCE_DIR}
-)
+find_package(glog REQUIRED)
+find_package(gflags REQUIRED)
+
+include_directories(${PROJECT_SOURCE_DIR})
 set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/net/Acceptor.cpp
         ${PROJECT_SOURCE_DIR}/net/Buffer.cpp
@@ -26,4 +27,4 @@ set(SOURCE_FILES
 )
 add_executable(fireServer main.cpp ${SOURCE_FILES})
 
-target_link_libraries(fireServer -lpthread)
+target_link_libraries(fireServer -lpthread gflags glog::glog)

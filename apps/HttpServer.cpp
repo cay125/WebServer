@@ -19,7 +19,7 @@ void Fire::App::HttpServer::RegisterHandler(std::string url, std::function<void(
 
 void Fire::App::HttpServer::HandleConnect(std::shared_ptr<Fire::TcpConnection> conn)
 {
-    if (conn->connectionState() == TcpConnection::connected)
+    if (conn->connectionState() == TcpConnection::STATE::connected)
     {
         std::shared_ptr<HttpData> httpUnit(new HttpData(&url2cb, &timer_queue, root_dir));
         conn->setMessageCallback(std::bind(&HttpData::HandleRead, httpUnit, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));

@@ -106,7 +106,7 @@ int main(int argc, char **argv)
                                 });
         server.setConnectionCallback([](std::shared_ptr<Fire::TcpConnection> p)
                                     {
-                                        if (p->connectionState() == Fire::TcpConnection::connected)
+                                        if (p->connectionState() == Fire::TcpConnection::STATE::connected)
                                             std::cout << "connected callback was called from thread: " << std::this_thread::get_id() << "\n";
                                         else
                                             std::cout << "closed callback was called from thread: " << std::this_thread::get_id() << "\n";
@@ -136,6 +136,8 @@ int main(int argc, char **argv)
                     { std::cout << "timer queue event 1s\n"; }, std::chrono::seconds(1));
         queue.addTimer([]()
                     { std::cout << "timer queue event 5s\n"; }, std::chrono::seconds(5));
+        queue.addTimer([]()
+                    { static int count = 0; std::cout << "timer queue event 6s - " << count++ << " \n"; }, std::chrono::seconds(6), std::chrono::milliseconds(1000));
         event_loop.loop();
     }
     else if (FLAGS_test_case == 5) //for Connector test

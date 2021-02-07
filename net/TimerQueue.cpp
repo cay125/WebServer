@@ -14,10 +14,18 @@ Fire::TimerQueue::TimerQueue(EventLoop *loop) : event_loop(loop), timerFd(create
 
 void Fire::TimerQueue::HandleRead()
 {
+    auto now = chrono::system_clock::now();
     readTimerFd();
-    auto expired_timers = getExpiredTimer();
+    auto expired_timers = getExpiredTimer(now);
     for (auto &timer:expired_timers)
+    {
         timer->Run();
+        if (timer->isRepeated())
+        {
+            timer->UpdateExpireTime(now);
+            timers.insert(std::make_pair(timer->GetExpireTime(), timer));
+        }
+    }
     if (!timers.empty())
     {
         auto next_expire_time = timers.begin()->first;
@@ -36,10 +44,9 @@ void Fire::TimerQueue::resetTimerFd(const timeStamp &next_expire_time)
         std::cout << "Error: reset timer fd\n";
 }
 
-std::vector<std::shared_ptr<Fire::TimerNode>> Fire::TimerQueue::getExpiredTimer()
+std::vector<std::shared_ptr<Fire::TimerNode>> Fire::TimerQueue::getExpiredTimer(timeStamp now_timestamp)
 {
-    auto now = chrono::system_clock::now();
-    auto it_end = timers.lower_bound(now);
+    auto it_end = timers.lower_bound(now_timestamp);
     std::vector<std::shared_ptr<Fire::TimerNode>> expired;
     for (auto it = timers.begin(); it != it_end; it++)
         expired.push_back(it->second);
@@ -84,6 +91,22 @@ void Fire::TimerNode::Run()
 Fire::timeStamp Fire::TimerNode::GetExpireTime()
 {
     return expire_time;
+}
+
+std::chrono::milliseconds Fire::TimerNode::GetInterval()
+{
+    return interval;
+}
+
+bool Fire::TimerNode::isRepeated()
+{
+    return repeated;
+}
+
+void Fire::TimerNode::UpdateExpireTime(timeStamp now_time)
+{
+    if (repeated)
+        expire_time = now_time + GetInterval();
 }
 
 

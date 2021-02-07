@@ -36,8 +36,8 @@ namespace Fire
         static const std::string ANY_ADDR;
 
     private:
-        uint16_t net_port;
-        uint32_t net_addr;
+        uint16_t net_port = 0;
+        uint32_t net_addr = 0;
     };
 
 

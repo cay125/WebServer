@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdexcept>
 #include <sys/timerfd.h>
 #include <unistd.h>
 
@@ -173,6 +174,18 @@ int main(int argc, char **argv)
         client.Connect();
         http_server.RegisterHandler("/fuck", &proxy);
         event_loop.loop();
+    }
+    else if (FLAGS_test_case == 7)
+    {
+        try
+        {
+            Fire::NetAddr addr("www.baidu.com", 80);
+            std::cout << addr.GetIpString() << "\n";
+        }
+        catch(const std::exception& e)
+        {
+            std::cout << "Enter exception: " << e.what() << "\n";
+        }
     }
 
     gflags::ShutDownCommandLineFlags();

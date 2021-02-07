@@ -3,11 +3,13 @@
 //
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <string.h>
+#include <glog/logging.h>
 
 #include "net/Acceptor.hpp"
 
@@ -59,17 +61,22 @@ Fire::NetAddr::NetAddr(std::string _ipAddr, uint16_t _port)
     }
     addrinfo hint{}; //c++11 feature, value initialize all zero
     hint.ai_family = AF_INET;
-    if (is_hostname)
+    if (!is_hostname)
         hint.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV; //means we don't want to resolve anything
     else 
         hint.ai_flags = AI_ALL;
     
     addrinfo *resolved_addr = nullptr;
     int ret = getaddrinfo(_ipAddr.c_str(), nullptr, &hint, &resolved_addr);
-    if (ret != 0 || resolved_addr == nullptr)
+    if (ret != 0)
     {
-        std::cout << "Error: Cannot resolve host.";
-        exit(1);
+        LOG(ERROR) << "ERROR: Resolve(" << _ipAddr << ") failed";
+        throw std::runtime_error("Resolve(" + _ipAddr + ") failed");
+    }
+    if (resolved_addr == nullptr)
+    {
+        LOG(ERROR) << "ERROR: getaddrinfo returned successfully but with no results";
+        throw std::runtime_error("getaddrinfo returned successfully but with no results");
     }
     auto addrinfo_deleter = [](addrinfo *const x) { freeaddrinfo(x); };
     std::unique_ptr<addrinfo, decltype(addrinfo_deleter)> wrapped_address(resolved_addr, std::move(addrinfo_deleter));
@@ -85,10 +92,12 @@ Fire::NetAddr::NetAddr(sockaddr_in &_addr)
 
 Fire::Socket::Socket(int fd) : sock_fd(fd)
 {
+    CHECK(fd > 0);
 }
 
 void Fire::Socket::closeSock(int fd)
 {
+    CHECK(fd > 0);
     ::close(fd);
 }
 
@@ -105,7 +114,7 @@ int Fire::Socket::listening()
 {
     int res = listen(sock_fd, 100);
     if (res < 0)
-        std::cout << "Error: listen error\n";
+        LOG(ERROR) << "ERROR: listen error. Reason: " << strerror(errno);
     return res;
 }
 
@@ -115,7 +124,7 @@ int Fire::Socket::setBindAddr(Fire::NetAddr &_addr)
     _addr.GetSockAddr(addr);
     int res = bind(sock_fd, (sockaddr *) &addr, sizeof(addr));
     if (res < 0)
-        std::cout << "Error: binding socket addr\n";
+        LOG(ERROR) << "ERROR: binding socket addr. Reason: " << strerror(errno);
     return res;
 }
 
@@ -128,7 +137,7 @@ int Fire::Socket::createSocket()
 {
     int sockfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP);
     if (sockfd < 0)
-        std::cout << "Error: Createing socket\n";
+        LOG(ERROR) << "ERROR: Createing socket. Reason: " << strerror(errno);
     return sockfd;
 }
 
@@ -139,8 +148,7 @@ int Fire::Socket::connect(NetAddr &_addr)
     int res = ::connect(sock_fd, (sockaddr *) &addr, sizeof(addr));
     if (res < 0)
     {
-        std::cout << "Error: Connect remote host\n";
-        perror("Reason");
+        LOG(ERROR) << "ERROR: Connect remote host. Reason: " << strerror(errno);
     }
     return res;
 }

@@ -3,14 +3,14 @@
 //
 #include <iostream>
 #include <unistd.h>
+#include <glog/logging.h>
 
 #include "net/TcpServer.hpp"
 #include "utils/AsyncLogger.hpp"
 
-Fire::TcpServer::TcpServer(EventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, NetAddr(NetAddr::ANY_ADDR, port)),
-                                                                             thread_pool(loop, thread_num)
+Fire::TcpServer::TcpServer(EventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, NetAddr(NetAddr::ANY_ADDR, port)), thread_pool(loop, thread_num)
 {
-    std::cout << "server is listening on port: " << port << "\n";
+    LOG(INFO) << "server is listening on port: " << port;
     thread_pool.Start();
     TcpAcceptor.setNewConnCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -32,7 +32,7 @@ void Fire::TcpServer::setMessageCallback(msgFcn &&cb)
 
 void Fire::TcpServer::newConnection(int fd, Fire::NetAddr addr)
 {
-    FLOG << "one connection established from Ip: " << addr.GetIpString() << " Port: " << addr.GetPort();
+    LOG(INFO) << "one connection established from Ip: " << addr.GetIpString() << " Port: " << addr.GetPort();
     EventLoop *pool = thread_pool.GetNextThread();
     std::shared_ptr<TcpConnection> conn(new TcpConnection(pool, fd, addr));
     conn->setConnectionCallback(std::move(connectionCallback));
@@ -48,7 +48,7 @@ void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn
                           {
                               auto n = connSet.erase(conn);
                               if (n != 1)
-                                  std::cout << "Error: erase closed connection\n";
+                                  LOG(ERROR) << "ERROR: Erase closed connection";
                           });
 }
 
@@ -58,6 +58,7 @@ Fire::TcpConnection::TcpConnection(EventLoop *loop, int fd, NetAddr _addr) : eve
     connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this), false);
     connChannel.setWriteCallback(std::bind(&TcpConnection::HandleWrite, this), false);
     connChannel.setCloseCallback(std::bind(&TcpConnection::HandleClose, this), false);
+    connChannel.setErrorCallback(std::bind(&TcpConnection::HandleError, this), false);
 }
 
 void Fire::TcpConnection::HandleRead()
@@ -65,20 +66,29 @@ void Fire::TcpConnection::HandleRead()
     char buf[65536] = {0};
     ssize_t n = read(connChannel.GetMonitorFd(), buf, sizeof(buf));
     if (n > 0)
+    {
+        // TODO: handle there are some data hasn't  being read
+        // char rest_buf[65536] = {0};
+        // size_t m = read(connChannel.GetMonitorFd(), rest_buf, sizeof(rest_buf)); // read until no more data to read
         messageCallback(shared_from_this(), buf, n);
+    }
     else if (n == 0)
+    {
         HandleClose();
+    }
     else if (n < 0)
+    {
         HandleError();
+    }
 }
 
 void Fire::TcpConnection::HandleWrite()
 {
-    std::cout << "enter write handler fd: " << connChannel.GetMonitorFd() << "\n";
+    LOG(INFO) << "Enter write handler fd: " << connChannel.GetMonitorFd();
     ssize_t n = write(connChannel.GetMonitorFd(), outputBuffer.StartPoint(), outputBuffer.readableBytes());
     if (n < 0)
     {
-        std::cout << "Error: write data failed\n";
+        LOG(ERROR) << "Error: Write data failed. Reason: " << strerror(errno);
         n = 0;
     }
     outputBuffer.Remove(n);
@@ -90,21 +100,21 @@ void Fire::TcpConnection::HandleWrite()
     }
     else
     {
-        std::cout << "Going to write more data: " << outputBuffer.readableBytes() << " bytes\n";
+        LOG(INFO) << "Going to write more data: " << outputBuffer.readableBytes() << " bytes";
     }
 }
 
 void Fire::TcpConnection::HandleClose()
 {
-    FLOG << "one connection closed from Ip: " << clientAddr.GetIpString() << " Port: " << clientAddr.GetPort();
-    state = STATE::closed;
+    LOG(INFO) << "one connection closed from Ip: " << clientAddr.GetIpString() << " Port: " << clientAddr.GetPort();
+    CHECK(state == STATE::connected);
     connDestroyed();
     closeCallback(shared_from_this());
 }
 
 void Fire::TcpConnection::HandleError()
 {
-
+    LOG(ERROR) << "ERROR: TcpConnection has error occurs";
 }
 
 void Fire::TcpConnection::Shutdown()
@@ -135,14 +145,14 @@ void Fire::TcpConnection::send(const std::string &msg)
                                   ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
                                   if (n < 0)
                                   {
-                                      std::cout << "Error: write data failed\n";
+                                      LOG(ERROR) << "ERROR: Write data failed. Reason: " << strerror(errno);
                                       n = 0;
                                   }
                                   if (n < msg.size())
                                   {
                                       outputBuffer.Appand(msg.data() + n, msg.size() - n);
                                       connChannel.enableWriteCallback();
-                                      std::cout << "Going to write more data: " << msg.size() - n << " bytes\n";
+                                      LOG(INFO) << "Going to write more data: " << msg.size() - n << " bytes";
                                   }
                                   else
                                   {
@@ -174,9 +184,11 @@ void Fire::TcpConnection::setCloseCallback(std::function<void(std::shared_ptr<Fi
 
 void Fire::TcpConnection::connDestroyed()
 {
+    state = STATE::closed;
     if (connectionCallback)
         connectionCallback(shared_from_this());
     event_loop->removeChannel(&connChannel);
+    connChannel.disableAll();
     connChannel.clearCallback();
     close(connChannel.GetMonitorFd());
 }

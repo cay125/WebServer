@@ -131,3 +131,9 @@ void Fire::Channel::remove()
 {
     event_loop->removeChannel(this);
 }
+
+void Fire::Channel::disableAll()
+{
+    disableReadCallback();
+    disableWriteCallback();
+}

@@ -57,6 +57,8 @@ namespace Fire
 
         void enableCloseCallback();
 
+        void disableAll();// disable read and write
+
         uint8_t GetRegisterStatus();
 
         int GetMonitorFd();

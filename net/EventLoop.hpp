@@ -17,7 +17,7 @@ namespace Fire
     {
         typedef std::function<void()> eventCallback;
     public:
-        enum STATUS
+        enum class STATUS
         {
             STOP, RUNNING, SLEEP
         };

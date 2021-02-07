@@ -4,15 +4,15 @@
 #include <iostream>
 #include <sys/eventfd.h>
 #include <unistd.h>
+#include <glog/logging.h>
 
 #include "net/EventLoop.hpp"
 #include "net/Channel.hpp"
 
 
-Fire::EventLoop::EventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(RUNNING),
-                               own_thread_id(std::this_thread::get_id()), isDoPendng(false)
+Fire::EventLoop::EventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(STATUS::RUNNING), own_thread_id(std::this_thread::get_id()), isDoPendng(false)
 {
-    std::cout << "Event loop is created in thread: " << std::this_thread::get_id() << "\n";
+    LOG(INFO) << "Event loop is created in thread: " << std::this_thread::get_id();
     wakeChannel.setReadCallback(std::bind(&EventLoop::HandleRead, this), true);
 }
 
@@ -21,7 +21,7 @@ void Fire::EventLoop::HandleRead()
     uint64_t res = 0;
     ssize_t n = read(wakeFd, &res, sizeof(res));
     if (n != sizeof(res))
-        std::cout << "Error: read wrong bytes\n";
+        LOG(ERROR) << "ERROR: Read wrong bytes";
 }
 
 void Fire::EventLoop::wakeSelf()
@@ -68,26 +68,25 @@ void Fire::EventLoop::loop()
 {
     if (!isInCurrentThread())
     {
-        std::cout << "Event loop shoul only run in one thread\n";
-        exit(-1);
+        LOG(FATAL) << "Event loop shoul only run in one thread";
     }
-    status = RUNNING;
-    std::cout << "enter event loop\n";
-    while (status != STOP)
+    status = STATUS::RUNNING;
+    LOG(INFO) << "Enter event loop";
+    while (status != STATUS::STOP)
     {
         std::vector<Channel *> activated_channels = monitor.checkEvents();
         if (!activated_channels.empty())
             for (auto channel :activated_channels)
                 channel->processEvent();
         else
-            status = STOP;
+            status = STATUS::STOP;
         doPendingCallback();
     }
 }
 
 void Fire::EventLoop::stopLoop()
 {
-    status = STOP;
+    status = STATUS::STOP;
     if (!isInCurrentThread())
         wakeSelf();
 }

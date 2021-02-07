@@ -3,6 +3,7 @@
 //
 #include <iostream>
 #include <string.h>
+#include <glog/logging.h>
 
 #include "net/EventMonitor.hpp"
 
@@ -20,7 +21,7 @@ std::vector<Fire::Channel *> Fire::EventMonitor::checkEvents()
     int numEvents = epoll_wait(monitor_fd, &*event_details.begin(), event_details.size(), -1);
     if (numEvents < 0)
     {
-        std::cout << "ERROR: error occurs when waiting event happen\n";
+        LOG(ERROR) << "ERROR: Error occurs when waiting events happen. Reason: " << strerror(errno);
         return std::vector<Channel *>(0);
     }
     return GetActivatedChannels(numEvents);
@@ -34,7 +35,7 @@ std::vector<Fire::Channel *> Fire::EventMonitor::GetActivatedChannels(int count)
         auto it = Fd2Channel.find(event_details[i].data.fd);
         if (it == Fd2Channel.end())
         {
-            std::cout << "Error: Can not find expected channel.\n";
+            LOG(ERROR) << "ERROR: Can not find expected channel";
             return std::vector<Fire::Channel *>(0);
         }
         Channel *activated_channel = it->second;
@@ -54,8 +55,7 @@ void Fire::EventMonitor::addEvent(int fd, uint32_t event_flags)
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_ADD, fd, &temp_event) == -1)
     {
-        std::cout << "add event failed\n";
-        perror("reason");
+        LOG(ERROR) << "ERROR: Add event failed. Reason: " << strerror(errno);
     }
 }
 
@@ -67,8 +67,7 @@ void Fire::EventMonitor::modEvent(int fd, uint32_t event_flags)
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_MOD, fd, &temp_event) == -1)
     {
-        std::cout << "mod event failed\n";
-        perror("reason");
+        LOG(ERROR) << "ERROR: Mod event failed. Reason： " << strerror(errno);
     }
 }
 
@@ -80,8 +79,7 @@ void Fire::EventMonitor::delEvent(int fd, uint32_t event_flags)
     temp_event.events = event_flags;
     if (epoll_ctl(monitor_fd, EPOLL_CTL_DEL, fd, &temp_event) == -1)
     {
-        std::cout << "del event failed\n";
-        perror("reason");
+        LOG(ERROR) << "ERROR: Del event failed. Reason：" << strerror(errno);
     }
 }
 

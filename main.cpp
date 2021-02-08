@@ -202,6 +202,12 @@ int main(int argc, char **argv)
             std::cout << "Enter exception: " << e.what() << "\n";
         }
     }
+    else if (FLAGS_test_case == 8)
+    {
+        Fire::EventLoop event_loop;
+        event_loop.RunAt([](){std::cout << "funking\n";}, "2021-02-08 15:40:10", "%Y-%m-%d %H:%M:%S");
+        event_loop.loop();
+    }
 
     gflags::ShutDownCommandLineFlags();
     google::ShutdownGoogleLogging();

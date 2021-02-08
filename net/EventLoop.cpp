@@ -10,7 +10,7 @@
 #include "net/Channel.hpp"
 
 
-Fire::EventLoop::EventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(STATUS::RUNNING), own_thread_id(std::this_thread::get_id()), isDoPendng(false)
+Fire::EventLoop::EventLoop() : wakeFd(eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC)), wakeChannel(this, wakeFd), status(STATUS::RUNNING), own_thread_id(std::this_thread::get_id()), isDoPendng(false), timer_queue(this)
 {
     LOG(INFO) << "Event loop is created in thread: " << std::this_thread::get_id();
     wakeChannel.setReadCallback(std::bind(&EventLoop::HandleRead, this), true);

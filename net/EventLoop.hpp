@@ -7,9 +7,12 @@
 
 #include <thread>
 #include <mutex>
+#include <sstream>
+#include <iomanip>
 
 #include "net/Channel.hpp"
 #include "net/EventMonitor.hpp"
+#include "net/TimerQueue.hpp"
 
 namespace Fire
 {
@@ -42,6 +45,31 @@ namespace Fire
 
         void stopLoop();
 
+        template<class rep1, class period1, class rep2, class period2>
+        void RunEvery(eventCallback &&cb, const chrono::duration<rep1, period1> &timeout, const chrono::duration<rep2, period2> &interval)
+        {
+            timer_queue.addTimer(std::move(cb), timeout, interval);
+        }
+
+        void RunAt(eventCallback &&cb, std::string wakeup_time, std::string format)
+        {
+            tm t{};
+            std::istringstream ss(wakeup_time);
+            ss >> std::get_time(&t, format.c_str());
+            if (ss.fail())
+            {
+                LOG(ERROR) << "ERROR: Parsing time point string failed";
+                return;
+            }
+            timer_queue.addTimer(std::move(cb), t);
+        }
+
+        template<class rep, class period>
+        void RunAfter(eventCallback &&cb, const chrono::duration<rep, period> &timeout)
+        {
+            timer_queue.addTimer(std::move(cb), timeout);
+        }
+
         STATUS getStatus()
         { return status; }
 
@@ -63,6 +91,7 @@ namespace Fire
         Channel wakeChannel;
         std::vector<Fire::EventLoop::eventCallback> pendingCBs;
         bool isDoPendng;
+        TimerQueue timer_queue;
     };
 }
 

@@ -47,6 +47,8 @@ namespace Fire
 
         void setMessageCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>, const char *, ssize_t)> &&cb);
 
+        NetAddr GetPeerAddr() const;
+
     private:
         void HandleRead();
 

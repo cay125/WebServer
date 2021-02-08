@@ -10,7 +10,7 @@
 
 Fire::TcpServer::TcpServer(EventLoop *loop, uint16_t port, int thread_num) : event_loop(loop), TcpAcceptor(loop, NetAddr(NetAddr::ANY_ADDR, port)), thread_pool(loop, thread_num)
 {
-    LOG(INFO) << "server is listening on port: " << port;
+    LOG(INFO) << "Server is listening on port: " << port;
     thread_pool.Start();
     TcpAcceptor.setNewConnCallback(std::bind(&TcpServer::newConnection, this, std::placeholders::_1, std::placeholders::_2));
 }
@@ -180,6 +180,11 @@ void Fire::TcpConnection::setMessageCallback(std::function<void(std::shared_ptr<
 void Fire::TcpConnection::setCloseCallback(std::function<void(std::shared_ptr<Fire::TcpConnection>)> &&cb)
 {
     closeCallback = cb;
+}
+
+Fire::NetAddr Fire::TcpConnection::GetPeerAddr() const
+{
+    return clientAddr;
 }
 
 void Fire::TcpConnection::connDestroyed()

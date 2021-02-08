@@ -26,5 +26,7 @@ set(SOURCE_FILES
         ${PROJECT_SOURCE_DIR}/apps/HttpServer.cpp
 )
 add_executable(fireServer main.cpp ${SOURCE_FILES})
-
 target_link_libraries(fireServer -lpthread gflags glog::glog)
+
+add_executable(httpserver samples/httpserver.cpp ${SOURCE_FILES})
+target_link_libraries(httpserver -lpthread gflags glog::glog)

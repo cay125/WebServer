@@ -2,6 +2,7 @@
 // Created by xiangpu on 20-3-4.
 //
 #include <iostream>
+#include <glog/logging.h>
 
 #include "net/EventThreadPool.hpp"
 
@@ -32,7 +33,7 @@ Fire::EventLoop *Fire::EventLoopThread::start()
 {
     event_thread = std::thread(std::bind(&EventLoopThread::threadFcn, this));
     if (!event_thread.joinable())
-        std::cout << "Error: thread can not detach\n";
+        LOG(ERROR) << "ERROR: Thread can not detach";
     std::unique_lock<std::mutex> lk(m_mutex);
     while (event_loop == nullptr)
         m_cond.wait(lk, [this]()

@@ -2,6 +2,7 @@
 // Created by xiangpu on 20-5-12.
 //
 #include <iostream>
+#include <glog/logging.h>
 
 #include "net/Connector.hpp"
 
@@ -62,12 +63,12 @@ void Fire::Connector::Connect()
         case EADDRNOTAVAIL:
         case ECONNREFUSED:
         case ENETUNREACH:
-            std::cout << "Connector will retry after 1s\n";
+            LOG(INFO) << "Connector will retry after 1s";
             conn_sock->close();
             Retry();
             break;
         default:
-            std::cout << "unexpected error happen when connecting remote host\n";
+            LOG(ERROR) << "ERROR: Unexpected error happen when connecting remote host";
             conn_sock->close();
             break;
     }
@@ -77,7 +78,7 @@ void Fire::Connector::Retry()
 {
     queue.addTimer([this]()
                    {
-                       std::cout << "Retry to connect\n";
+                       LOG(INFO) << "Retring to connect";
                        Connect();
                    }, std::chrono::seconds(1));
 }

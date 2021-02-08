@@ -42,7 +42,7 @@ void Fire::TimerQueue::resetTimerFd(const timeStamp &next_expire_time)
     memset(&old_value, 0, sizeof(old_value));
     makeRestTime(new_value, next_expire_time);
     if (timerfd_settime(timerFd, 0, &new_value, &old_value) == -1)
-        std::cout << "Error: reset timer fd\n";
+        LOG(ERROR) << "ERROR: Reset timer fd failed";
 }
 
 std::vector<std::shared_ptr<Fire::TimerNode>> Fire::TimerQueue::getExpiredTimer(timeStamp now_timestamp)
@@ -60,14 +60,14 @@ void Fire::TimerQueue::readTimerFd()
     uint64_t res = 0;
     ssize_t n = read(timerFd, &res, sizeof(res));
     if (n != sizeof(res))
-        std::cout << "read error\n";
+        LOG(ERROR) << "ERROR: Read time fd failed";
 }
 
 int Fire::TimerQueue::createTimerFd()
 {
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
     if (fd < 0)
-        std::cout << "Error: create timer fd\n";
+        LOG(ERROR) << "ERROR: Create timer fd failed";
     return fd;
 }
 

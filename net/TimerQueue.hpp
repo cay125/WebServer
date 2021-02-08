@@ -7,7 +7,10 @@
 
 #include <chrono>
 #include <map>
+#include <iostream>
+#include <stdexcept>
 #include <sys/timerfd.h>
+#include <glog/logging.h>
 
 #include "net/Channel.hpp"
 
@@ -34,13 +37,26 @@ namespace Fire
             repeated = true;
         }
 
+        TimerNode(Callback &&cb, tm &wakeup_time)
+        {
+            auto t_point = chrono::system_clock::from_time_t(mktime(&wakeup_time));
+            if (t_point < chrono::system_clock::now())
+            {
+                std::string errstr = "Cannot create a timer which only exist in past";
+                LOG(ERROR) << "ERROR: " + errstr;
+                throw std::runtime_error(errstr);
+            } 
+            expire_time = t_point;
+            timerCallback = std::move(cb);
+        }
+
         void Run();
 
         timeStamp GetExpireTime();
 
         std::chrono::milliseconds GetInterval();
 
-        void UpdateExpireTime(timeStamp now_time);
+        void UpdateExpireTime(const timeStamp &now_time);
 
         bool isRepeated();
 
@@ -61,30 +77,29 @@ namespace Fire
         void addTimer(Callback &&cb, const chrono::duration<rep, period> &timeout)
         {
             std::shared_ptr<TimerNode> timer(new TimerNode(std::move(cb), timeout));
-            event_loop->runInLoop([this, timer]()
-                                  {
-                                      bool isChanged = false;
-                                      if (timers.empty() || timer->GetExpireTime() < timers.begin()->first)
-                                          isChanged = true;
-                                      timers.insert(std::make_pair(timer->GetExpireTime(), timer));
-                                      if (isChanged)
-                                          resetTimerFd(timer->GetExpireTime());
-                                  });
+            InsertTimer(timer);
         }
 
         template<class rep1, class period1, class rep2, class period2>
         void addTimer(Callback &&cb, const chrono::duration<rep1, period1> &timeout, const chrono::duration<rep2, period2> &interval)
         {
             std::shared_ptr<TimerNode> timer(new TimerNode(std::move(cb), timeout, interval));
-            event_loop->runInLoop([this, timer]()
-                                  {
-                                      bool isChanged = false;
-                                      if (timers.empty() || timer->GetExpireTime() < timers.begin()->first)
-                                          isChanged = true;
-                                      timers.insert(std::make_pair(timer->GetExpireTime(), timer));
-                                      if (isChanged)
-                                          resetTimerFd(timer->GetExpireTime());
-                                  });
+            InsertTimer(timer);
+        }
+
+        void addTimer(Callback &&cb, tm &wakeup_time)
+        {
+            LOG(INFO) << "A timer task trying to create in: " << std::asctime(&wakeup_time);
+            try
+            {
+                std::shared_ptr<TimerNode> timer(new TimerNode(std::move(cb), wakeup_time));
+                LOG(INFO) << "A timer task was created in: " << std::asctime(&wakeup_time);
+                InsertTimer(timer);
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+            } 
         }
 
         void cancelTimer();
@@ -103,9 +118,11 @@ namespace Fire
 
         void HandleRead();
 
-        void makeRestTime(itimerspec &rest_time, timeStamp next_expire_time);
+        void makeRestTime(itimerspec &rest_time, const timeStamp &next_expire_time);
 
         std::vector<std::shared_ptr<Fire::TimerNode>> getExpiredTimer(timeStamp now_timestamp);
+
+        void InsertTimer(std::shared_ptr<TimerNode> timer);
     };
 }
 

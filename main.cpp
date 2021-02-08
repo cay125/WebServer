@@ -1,5 +1,8 @@
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
+#include <locale>
+#include <iomanip>
 #include <sys/timerfd.h>
 #include <unistd.h>
 
@@ -138,6 +141,16 @@ int main(int argc, char **argv)
                     { std::cout << "timer queue event 5s\n"; }, std::chrono::seconds(5));
         queue.addTimer([]()
                     { static int count = 0; std::cout << "timer queue event 6s - " << count++ << " \n"; }, std::chrono::seconds(6), std::chrono::milliseconds(1000));
+        tm t{};
+        std::istringstream ss("2021-02-08 15:15:10");
+        ss >> std::get_time(&t, "%Y-%m-%d %H:%M:%S");
+        queue.addTimer([]()
+                      { 
+                          auto tt = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()); 
+                          auto local_time = std::localtime(&tt);
+                          std::cout << "evetn happen in: " << std::asctime(local_time) << "\n";
+                      }, t);
+
         event_loop.loop();
     }
     else if (FLAGS_test_case == 5) //for Connector test

@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "net/TimerQueue.hpp"
+#include "net/EventLoop.hpp"
 
 Fire::TimerQueue::TimerQueue(EventLoop *loop) : event_loop(loop), timerFd(createTimerFd()), timerChannel(event_loop, timerFd)
 {
@@ -70,7 +71,7 @@ int Fire::TimerQueue::createTimerFd()
     return fd;
 }
 
-void Fire::TimerQueue::makeRestTime(itimerspec &rest_time, timeStamp next_expire_time)
+void Fire::TimerQueue::makeRestTime(itimerspec &rest_time, const timeStamp &next_expire_time)
 {
     rest_time.it_value.tv_sec = chrono::duration_cast<chrono::seconds>(next_expire_time - chrono::system_clock::now()).count();
     rest_time.it_value.tv_nsec =
@@ -80,6 +81,19 @@ void Fire::TimerQueue::makeRestTime(itimerspec &rest_time, timeStamp next_expire
 void Fire::TimerQueue::cancelTimer()
 {
 
+}
+
+void Fire::TimerQueue::InsertTimer(std::shared_ptr<TimerNode> timer)
+{
+    event_loop->runInLoop([this, timer]()
+                          {
+                            bool isChanged = false;
+                            if (timers.empty() || timer->GetExpireTime() < timers.begin()->first)
+                                isChanged = true;
+                            timers.insert(std::make_pair(timer->GetExpireTime(), timer));
+                            if (isChanged)
+                                resetTimerFd(timer->GetExpireTime());
+                          });
 }
 
 void Fire::TimerNode::Run()
@@ -103,7 +117,7 @@ bool Fire::TimerNode::isRepeated()
     return repeated;
 }
 
-void Fire::TimerNode::UpdateExpireTime(timeStamp now_time)
+void Fire::TimerNode::UpdateExpireTime(const timeStamp &now_time)
 {
     if (repeated)
         expire_time = now_time + GetInterval();

@@ -5,9 +5,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <glog/logging.h>
 
 #include "apps/HttpData.hpp"
-#include "utils/AsyncLogger.hpp"
 
 std::map<std::string, std::string> Fire::App::cType::suffix2type;
 
@@ -23,17 +23,17 @@ void Fire::App::HttpData::HandleWriteFinish(std::shared_ptr<Fire::TcpConnection>
 {
     if (!keepAlive)
     {
-        FLOG << "active close one short connection";
+        LOG(INFO) << "Active close one short connection";
         p->Shutdown();
     }
     else if (!timer_start)
     {
         timer_start = true;
-        FLOG << "add timer";
+        LOG(INFO) << "Add timer";
         timer_queue->addTimer([p]()
                               {
                                   p->Shutdown();
-                                  FLOG << "oen connection closed by timer";
+                                  LOG(INFO) << "one connection closed by timer";
                               }, std::chrono::milliseconds(DEFAULT_ALIVE_TIME));
     }
 }
@@ -145,7 +145,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     }
     if (request.file_name == "/")
         request.file_name = "/index.html";
-    FLOG << "GET: " << request.file_name;
+    LOG(INFO) << "GET: " << request.file_name;
     request.file_name = root_dir / request.file_name.substr(1);
     std::string version_string = requestLine.substr(pos + 1, requestLine.length() - pos - 1);
     if (version_string == "HTTP/1.1")

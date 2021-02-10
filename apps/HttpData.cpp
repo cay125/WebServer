@@ -40,7 +40,7 @@ void Fire::App::HttpData::HandleWriteFinish(std::shared_ptr<Fire::TcpConnection>
 
 void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, const char *buf, ssize_t len)
 {
-    if (parserHttpMsg(std::string(buf)) == STATUS_ERROR)
+    if (parserHttpMsg(std::string(buf)) == STATUS::STATUS_ERROR)
     {
         response.status_code = httpResponse::StatusCode::c400BadRequest;
         response.status_msg = "Bad Request";
@@ -48,6 +48,7 @@ void Fire::App::HttpData::HandleRead(std::shared_ptr<Fire::TcpConnection> p, con
     }
     else
     {
+        LOG(INFO) << "[" << p->GetPeerAddr().GetUrlString() << "] is requiring-> " << request.to_string() << " in thread: " << std::this_thread::get_id(); 
         analyseRequest();
     }
     if (url2cb->count(request.original_url))
@@ -68,7 +69,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserHttpMsg(std::string msg)
 {
     ParserStatus parser_status = ParserStatus::parser_request;
     unsigned long pos = 0, currentIndex = 0;
-    while (parser_status != parser_finish)
+    while (parser_status != ParserStatus::parser_finish)
     {
         if (parser_status == ParserStatus::parser_request)
         {
@@ -78,14 +79,14 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserHttpMsg(std::string msg)
             if (parserRequest(msg.substr(currentIndex, pos)) == STATUS::STATUS_SUCCESS)
                 parser_status = ParserStatus::parser_head;
             else
-                return STATUS_ERROR;
+                return STATUS::STATUS_ERROR;
             currentIndex = pos + 2;
         }
         else if (parser_status == ParserStatus::parser_head)
         {
             pos = msg.find("\r\n", currentIndex);
             if (pos == std::string::npos)
-                return STATUS_ERROR;
+                return STATUS::STATUS_ERROR;
             if (pos == currentIndex) //means no head line now
             {
                 if (request.method == httpRequest::Method::POST)
@@ -95,8 +96,8 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserHttpMsg(std::string msg)
             }
             else
             {
-                if (parserHeader(msg.substr(currentIndex, pos - currentIndex)) != STATUS_SUCCESS)
-                    return STATUS_ERROR;
+                if (parserHeader(msg.substr(currentIndex, pos - currentIndex)) != STATUS::STATUS_SUCCESS)
+                    return STATUS::STATUS_ERROR;
                 else
                     currentIndex = pos + 2;
             }
@@ -114,7 +115,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
 {
     auto pos = requestLine.find(' ');
     if (pos == std::string::npos)
-        return STATUS_ERROR;
+        return STATUS::STATUS_ERROR;
     std::string method_string = requestLine.substr(0, pos);
     if (method_string == "GET")
         request.method = httpRequest::Method::GET;
@@ -125,11 +126,11 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     else if (method_string == "POST")
         request.method = httpRequest::Method::POST;
     else
-        return STATUS_ERROR;
+        return STATUS::STATUS_ERROR;
     auto start = pos + 1;
     pos = requestLine.find(' ', start);
     if (pos == std::string::npos)
-        return STATUS_ERROR;
+        return STATUS::STATUS_ERROR;
     auto pos_sig = requestLine.substr(start, pos - start).find('?');
     if (pos_sig != std::string::npos)
     {
@@ -145,7 +146,6 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     }
     if (request.file_name == "/")
         request.file_name = "/index.html";
-    LOG(INFO) << "GET: " << request.file_name;
     request.file_name = root_dir / request.file_name.substr(1);
     std::string version_string = requestLine.substr(pos + 1, requestLine.length() - pos - 1);
     if (version_string == "HTTP/1.1")
@@ -155,16 +155,16 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::parserRequest(std::string reque
     else
         request.version = httpRequest::Version::vunknown;
 
-    return STATUS_SUCCESS;
+    return STATUS::STATUS_SUCCESS;
 }
 
 Fire::App::HttpData::STATUS Fire::App::HttpData::parserHeader(std::string headLine)
 {
     auto pos = headLine.find(' ');
     if (pos == std::string::npos)
-        return STATUS_ERROR;
+        return STATUS::STATUS_ERROR;
     request.headers[headLine.substr(0, pos - 1)] = headLine.substr(pos + 1, headLine.length() - pos - 1);
-    return STATUS_SUCCESS;
+    return STATUS::STATUS_SUCCESS;
 }
 
 Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
@@ -173,7 +173,7 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
     {
         if (request.headers["Connection"] == "Keep-Alive" || request.headers["Connection"] == "keep-alive")
         {
-            response.headers["Connection"] = " Keep-Alive";
+            response.headers["Connection"] = "Keep-Alive";
             response.headers["Keep-Alive"] = "timeout=" + std::to_string(DEFAULT_ALIVE_TIME);
             keepAlive = true;
         }
@@ -185,14 +185,16 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
     if (request.method == httpRequest::Method::GET || request.method == httpRequest::Method::HEAD)
     {
         if (url2cb->count(request.original_url) && url2cb->operator[](request.original_url))
-            return STATUS_SUCCESS;
-        if (!fs::exists(request.file_name))
+            return STATUS::STATUS_SUCCESS;
+        int fd = 0;
+        if (!fs::exists(request.file_name) || (fd = open(request.file_name.c_str(), O_RDONLY, 0)) < 0)
         {
             response.headers["Connection"] = "Close";
             response.headers.erase("Keep-Alive");
             response.status_code = httpResponse::StatusCode::c404NotFound;
             response.status_msg = "Not Found";
-            return STATUS_ERROR;
+            LOG(ERROR) << "ERROR: Cannot find required resource";
+            return STATUS::STATUS_ERROR;
         }
         response.status_code = httpResponse::StatusCode::c200ok;
         response.status_msg = "OK";
@@ -204,19 +206,19 @@ Fire::App::HttpData::STATUS Fire::App::HttpData::analyseRequest()
         auto file_size = fs::file_size(request.file_name);
         response.headers["Content-Length"] = std::to_string(file_size);
         if (request.method == httpRequest::Method::HEAD)
-            return STATUS_SUCCESS;
-        int fd = open(request.file_name.c_str(), O_RDONLY, 0);
+            return STATUS::STATUS_SUCCESS;
         void *mmapRet = mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0);
         char *file_addr = static_cast<char *>(mmapRet);
         response.body += std::string(file_addr, file_addr + file_size);
         munmap(mmapRet, file_size);
-        return STATUS_SUCCESS;
+        close(fd);
+        return STATUS::STATUS_SUCCESS;
     }
     else if (request.method == httpRequest::Method::POST)
     {
         //TODO: process POST request
     }
-    return STATUS_SUCCESS;
+    return STATUS::STATUS_SUCCESS;
 }
 
 void Fire::App::HttpData::reset()
@@ -235,7 +237,7 @@ void Fire::App::HttpData::reset()
 
 void Fire::App::httpResponse::makeString(std::string &msg)
 {
-    msg += "HTTP/1.1 " + std::to_string(status_code) + " " + status_msg + "\r\n";
+    msg += "HTTP/1.1 " + std::to_string(static_cast<int>(status_code)) + " " + status_msg + "\r\n";
     msg += "Server: fire\r\n";
     for (const auto &header:headers)
     {
@@ -265,8 +267,8 @@ void Fire::App::httpResponse::generateErrorString(std::string &msg, const Status
 {
     msg += "<html><title>ERROR HAPPEN</title>";
     msg += "<body bgcolor=\"ffffff\">";
-    msg += std::to_string(_status_code) + ' ' + _status_msg;
-    msg += "<hr><em> haha's Web Server</em>\n</body></html>";
+    msg += std::to_string(static_cast<int>(_status_code)) + ' ' + _status_msg;
+    msg += "<hr><em> Torch Fire's Web Server</em>\n</body></html>";
 }
 
 void Fire::App::cType::typeInit()
@@ -293,4 +295,27 @@ std::string Fire::App::cType::GetType(std::string suffix)
         return suffix2type[std::string("default")];
     else
         return suffix2type[suffix];
+}
+
+std::string Fire::App::httpRequest::to_string()
+{
+    // TODO: Generate more detailed information
+    std::string ret;
+    if (method == Method::GET)
+    {
+        ret += "GET: " + file_name;
+    }
+    else if (method == Method::POST)
+    {
+        ret += "POST";
+    }
+    else if (method == Method::HEAD)
+    {
+        ret += "HEAD";
+    }
+    else if (method == Method::PUT)
+    {
+        ret += "PUR";
+    }
+    return ret;
 }

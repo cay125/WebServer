@@ -32,11 +32,11 @@ namespace Fire
         class httpRequest
         {
         public:
-            enum Version
+            enum class Version
             {
                 vunknown, v11, v10
             };
-            enum Method
+            enum class Method
             {
                 GET, POST, PUT, HEAD
             };
@@ -47,12 +47,13 @@ namespace Fire
             std::string body;
             std::string original_url;
             std::map<std::string, std::string> headers;
+            std::string to_string();
         };
 
         class httpResponse
         {
         public:
-            enum StatusCode
+            enum class StatusCode : int
             {
                 c200ok = 200, c404NotFound = 404, c400BadRequest = 400, c301moved = 301
             };
@@ -69,11 +70,11 @@ namespace Fire
 
         class HttpData
         {
-            enum STATUS
+            enum class STATUS
             {
                 STATUS_SUCCESS, STATUS_ERROR
             };
-            enum ParserStatus
+            enum class ParserStatus
             {
                 parser_request, parser_head, parser_body, parser_analyse, parser_finish
             };

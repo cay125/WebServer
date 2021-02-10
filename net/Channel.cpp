@@ -8,7 +8,7 @@
 
 Fire::Channel::Channel(Fire::EventLoop *loop, const int fd) : event_loop(loop), event_fd(fd), register_status(0)
 {
-    expect_event_flags |= EPOLLET;
+    expect_event_flags = EPOLLET;
 }
 
 void Fire::Channel::processEvent()

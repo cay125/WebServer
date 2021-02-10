@@ -192,8 +192,8 @@ void Fire::TcpConnection::connDestroyed()
     state = STATE::closed;
     if (connectionCallback)
         connectionCallback(shared_from_this());
+    // connChannel.disableAll();
     event_loop->removeChannel(&connChannel);
-    connChannel.disableAll();
     connChannel.clearCallback();
     close(connChannel.GetMonitorFd());
 }

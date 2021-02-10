@@ -29,9 +29,26 @@ void Fire::Acceptor::listening()
 
 void Fire::Acceptor::HandleRead()
 {
-    NetAddr clientAddr("0.0.0.0", 0);
-    int fd = acceptor_sock.acceptOneConn(clientAddr);
-    newConnCallback(fd, clientAddr);
+    bool get_conn = false;
+    int fd = 0;
+    // loop until no more connections
+    do
+    {
+        NetAddr clientAddr("0.0.0.0", 0);
+        fd = acceptor_sock.acceptOneConn(clientAddr);
+        if (fd > 0)
+        {
+            if (newConnCallback)
+                newConnCallback(fd, clientAddr);
+            else 
+                Socket::closeSock(fd);
+            get_conn = true;
+        }
+    }while (fd > 0);
+    if (!get_conn)
+    {
+        LOG(ERROR) << "ERROR: No connection is established";
+    }
 }
 
 void Fire::Acceptor::setNewConnCallback(Fire::Acceptor::newConnFcn &&fcn)
@@ -190,5 +207,5 @@ uint16_t Fire::NetAddr::GetPortNetOrder()
 
 std::string Fire::NetAddr::GetUrlString()
 {
-    return GetIpString() + "+" + std::to_string(GetPort());
+    return GetIpString() + ":" + std::to_string(GetPort());
 }

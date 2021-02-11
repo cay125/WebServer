@@ -6,9 +6,12 @@
 #include "net/Channel.hpp"
 #include "net/EventLoop.hpp"
 
-Fire::Channel::Channel(Fire::EventLoop *loop, const int fd) : event_loop(loop), event_fd(fd), register_status(0)
+Fire::Channel::Channel(Fire::EventLoop *loop, const int fd, TriggerMode mode) : event_loop(loop), event_fd(fd), register_status(0), trigger_mode(mode)
 {
-    expect_event_flags = EPOLLET;
+    if (trigger_mode == TriggerMode::edge_mode)
+        expect_event_flags = EPOLLET;
+    else
+        expect_event_flags = 0;
 }
 
 void Fire::Channel::processEvent()
@@ -43,6 +46,7 @@ void Fire::Channel::setWriteCallback(eventCallback &&cb, bool enable)
     if (enable)
     {
         expect_event_flags |= EPOLLOUT;
+        register_status |= RegisterStatusMask::write;
         event_loop->updateChannel(this);
     }
 }
@@ -53,6 +57,7 @@ void Fire::Channel::setReadCallback(eventCallback &&cb, bool enable)
     if (enable)
     {
         expect_event_flags |= EPOLLIN;
+        register_status |= RegisterStatusMask::read;
         event_loop->updateChannel(this);
     }
 }
@@ -134,6 +139,14 @@ void Fire::Channel::remove()
 
 void Fire::Channel::disableAll()
 {
-    disableReadCallback();
-    disableWriteCallback();
+    expect_event_flags &= ~EPOLLIN;
+    register_status &= ~RegisterStatusMask::read;
+    expect_event_flags &= ~EPOLLOUT;
+    register_status &= ~RegisterStatusMask::write;
+    event_loop->updateChannel(this);
+}
+
+Fire::Channel::TriggerMode Fire::Channel::GetTriggerMode()
+{
+    return trigger_mode;
 }

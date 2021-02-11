@@ -60,7 +60,7 @@ namespace Fire
 
         static int createSocket();
 
-        static void closeSock(int fd);
+        static void closeSocket(int fd);
 
     private:
         int sock_fd;

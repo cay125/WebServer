@@ -20,7 +20,7 @@ namespace Fire
     public:
         enum class STATE
         {
-            connected, closed
+            connecting, connected, cloing, closed
         };
 
         TcpConnection(TcpConnection &) = delete;

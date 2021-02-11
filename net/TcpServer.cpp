@@ -53,7 +53,7 @@ void Fire::TcpServer::removeConnection(std::shared_ptr<Fire::TcpConnection> conn
 }
 
 Fire::TcpConnection::TcpConnection(EventLoop *loop, int fd, NetAddr _addr) : event_loop(loop), connChannel(event_loop, fd), clientAddr(_addr),
-                                                                             state(STATE::connected)
+                                                                             state(STATE::connecting)
 {
     connChannel.setReadCallback(std::bind(&TcpConnection::HandleRead, this), false);
     connChannel.setWriteCallback(std::bind(&TcpConnection::HandleWrite, this), false);
@@ -63,14 +63,24 @@ Fire::TcpConnection::TcpConnection(EventLoop *loop, int fd, NetAddr _addr) : eve
 
 void Fire::TcpConnection::HandleRead()
 {
-    char buf[65536] = {0};
-    ssize_t n = read(connChannel.GetMonitorFd(), buf, sizeof(buf));
+    std::vector<char> buf(65536, 0);
+    ssize_t n = read(connChannel.GetMonitorFd(), &*buf.begin(), buf.size());
     if (n > 0)
     {
-        // TODO: handle there are some data hasn't  being read
-        // char rest_buf[65536] = {0};
-        // size_t m = read(connChannel.GetMonitorFd(), rest_buf, sizeof(rest_buf)); // read until no more data to read
-        messageCallback(shared_from_this(), buf, n);
+        if (connChannel.GetTriggerMode() == Channel::TriggerMode::edge_mode && n == buf.size()) // there are still data inside buffer
+        {
+            size_t rest_n = 0;
+            std::vector<char> rest_buf(65536, 0);
+            do
+            {
+                LOG(INFO) << "Going to read more data";
+                rest_n = read(connChannel.GetMonitorFd(), &*rest_buf.begin(), rest_buf.size());
+                size_t index = buf.size();
+                buf.resize(buf.size() + rest_n);
+                std::copy(rest_buf.begin(), rest_buf.begin() + rest_n, buf.begin() + index);
+            } while (rest_n == rest_buf.size());
+        }
+        messageCallback(shared_from_this(), &*buf.begin(), n);
     }
     else if (n == 0)
     {
@@ -84,7 +94,7 @@ void Fire::TcpConnection::HandleRead()
 
 void Fire::TcpConnection::HandleWrite()
 {
-    LOG(INFO) << "Enter write handler fd: " << connChannel.GetMonitorFd();
+    LOG(INFO) << "Enter write handler by: [" << clientAddr.GetUrlString() << "]";
     ssize_t n = write(connChannel.GetMonitorFd(), outputBuffer.StartPoint(), outputBuffer.readableBytes());
     if (n < 0)
     {
@@ -92,11 +102,14 @@ void Fire::TcpConnection::HandleWrite()
         n = 0;
     }
     outputBuffer.Remove(n);
-    if (outputBuffer.readableBytes() == 0)
+    if (outputBuffer.readableBytes() == 0) // Finish writing
     {
-        connChannel.disableWriteCallback();
+        if (connChannel.GetTriggerMode() == Channel::TriggerMode::level_mode)
+            connChannel.disableWriteCallback();
         if (writeCalback)
             writeCalback(shared_from_this());
+        if (state == STATE::cloing)
+            HandleClose();
     }
     else
     {
@@ -107,7 +120,7 @@ void Fire::TcpConnection::HandleWrite()
 void Fire::TcpConnection::HandleClose()
 {
     LOG(INFO) << "one connection closed from Ip: " << clientAddr.GetIpString() << " Port: " << clientAddr.GetPort();
-    CHECK(state == STATE::connected);
+    CHECK(state == STATE::connected || state == STATE::cloing);
     connDestroyed();
     closeCallback(shared_from_this());
 }
@@ -119,10 +132,13 @@ void Fire::TcpConnection::HandleError()
 
 void Fire::TcpConnection::Shutdown()
 {
-    // maybe we should consider if any data are not send?
     event_loop->runInLoop([this]()
                           {
-                              HandleClose();
+                              if (state != STATE::connected)
+                                  return;
+                              state = STATE::cloing;
+                              if (outputBuffer.readableBytes() == 0)
+                                  HandleClose();
                           });
 }
 
@@ -138,9 +154,11 @@ void Fire::TcpConnection::setWriteCallback(std::function<void(std::shared_ptr<Fi
 
 void Fire::TcpConnection::send(const std::string &msg)
 {
+    if (state != STATE::connected)
+        return;
     event_loop->runInLoop([this, msg]()
                           {
-                              if (!(connChannel.GetRegisterStatus() & Channel::RegisterStatusMask::write))
+                              if (outputBuffer.readableBytes() == 0)
                               {
                                   ssize_t n = write(connChannel.GetMonitorFd(), msg.data(), msg.size());
                                   if (n < 0)
@@ -151,7 +169,8 @@ void Fire::TcpConnection::send(const std::string &msg)
                                   if (n < msg.size())
                                   {
                                       outputBuffer.Appand(msg.data() + n, msg.size() - n);
-                                      connChannel.enableWriteCallback();
+                                      if (!(connChannel.GetRegisterStatus() & Channel::RegisterStatusMask::write))
+                                          connChannel.enableWriteCallback();
                                       LOG(INFO) << "Going to write more data: " << msg.size() - n << " bytes";
                                   }
                                   else
@@ -195,16 +214,16 @@ void Fire::TcpConnection::connDestroyed()
     // connChannel.disableAll();
     event_loop->removeChannel(&connChannel);
     connChannel.clearCallback();
-    close(connChannel.GetMonitorFd());
+    Socket::closeSocket(connChannel.GetMonitorFd());
 }
 
 void Fire::TcpConnection::Established()
 {
     event_loop->runInLoop([this]()
                           {
+                              CHECK(state == STATE::connecting);
                               state = STATE::connected;
                               connChannel.enableReadCallback();
-                              connChannel.enableCloseCallback();
                               if (connectionCallback)
                                   connectionCallback(shared_from_this());
                           });

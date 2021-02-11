@@ -18,7 +18,6 @@ Fire::Acceptor::Acceptor(EventLoop *loop, NetAddr addr) : event_loop(loop), acce
 {
 
     acceptor_sock.setBindAddr(addr);
-    //acceptor_sock.listening();
     acceptor_channel.setReadCallback(std::bind(&Acceptor::HandleRead, this));
 }
 
@@ -41,7 +40,7 @@ void Fire::Acceptor::HandleRead()
             if (newConnCallback)
                 newConnCallback(fd, clientAddr);
             else 
-                Socket::closeSock(fd);
+                Socket::closeSocket(fd);
             get_conn = true;
         }
     }while (fd > 0);
@@ -112,7 +111,7 @@ Fire::Socket::Socket(int fd) : sock_fd(fd)
     CHECK(fd > 0);
 }
 
-void Fire::Socket::closeSock(int fd)
+void Fire::Socket::closeSocket(int fd)
 {
     CHECK(fd > 0);
     ::close(fd);

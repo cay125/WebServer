@@ -95,6 +95,8 @@ void Fire::TcpConnection::HandleRead()
 void Fire::TcpConnection::HandleWrite()
 {
     LOG(INFO) << "Enter write handler by: [" << clientAddr.GetUrlString() << "]";
+    if (outputBuffer.readableBytes() == 0 || state != STATE::connected)
+        return;
     ssize_t n = write(connChannel.GetMonitorFd(), outputBuffer.StartPoint(), outputBuffer.readableBytes());
     if (n < 0)
     {

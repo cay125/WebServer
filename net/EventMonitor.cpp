@@ -41,6 +41,7 @@ std::vector<Fire::Channel *> Fire::EventMonitor::GetActivatedChannels(int count)
         Channel *activated_channel = it->second;
         activated_channel->setREvent(event_details[i].events);
         res_channels.push_back(activated_channel);
+        event_details[i].events = 0;
     }
     return res_channels;
 }
